@@ -29,6 +29,7 @@ docs/design/            background research; read only when a task card points t
 ## Conventions
 - TypeScript strict, ESM, Node 20+. Zod schemas from `@cb/schema` are the single source of truth.
 - Pure functions for every pipeline stage; I/O only at the edges (host main, vault, MCP, extension).
+- Exported functions declare their return types; expected failures are returned as typed results, not thrown.
 - Test names start with the acceptance-criterion or task ID: `it("AC-10 code parts are byte-identical", …)`.
 - IDs: turns `t001`, attachments `a001`, items `i001`, packs `cp_<8 hex>`, sessions `s_<8 hex>`.
 - One commit for tests (`test(Txx): …`), then commits for code (`feat(Txx): …`).
