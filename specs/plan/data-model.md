@@ -95,7 +95,7 @@ type DestinationProfile = {
   route: Route;
   canPull: boolean;                   // true only for mcp
   acceptsImages: boolean;             // mcp, bundle: true; clipboard: false
-  acceptsFiles: boolean;              // bundle: true (mcp via get_attachment)
+  acceptsFiles: boolean;              // bundle only; mcp: false (files reached by pull, get_attachment)
   pushBudgetTokens: number;           // effective budget, see plan/compiler.md
 };
 

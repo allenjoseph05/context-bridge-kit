@@ -15,7 +15,7 @@ nothing important unreachable. Deterministic; no model calls.
   | --- | --- | --- | --- |
   | continue | 8,000 | condensed | 4 |
   | rescue | 3,000 | verbatim | 10 |
-  | second_opinion | 2,000 | condensed (extractive) | see below |
+  | second_opinion | 2,000 | condensed (extractive) | 2 (last user + last assistant; see Profiles) |
 
   | Route | Budget | acceptsImages | canPull |
   | --- | --- | --- | --- |

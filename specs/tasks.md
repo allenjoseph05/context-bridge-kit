@@ -12,7 +12,7 @@ Status: `todo` · `in_progress` · `review` (tests or code waiting for the human
 | T01 | Schemas and IDs (`@cb/schema`) | T00 | M | — | | done |
 | T02 | Paste parser and seed fixtures | T01 | S | — | | done |
 | T03 | Sanitiser (`@cb/sanitizer`) | T01, T02 | M | required | | done |
-| T04 | Token counting, budgets, envelope | T01 | S | — | | in_progress |
+| T04 | Token counting, budgets, envelope | T01 | S | — | | done |
 | T05 | Compiler, verbatim mode, coverage, bundle | T03, T04 | M | required | | todo |
 | T06 | Vault, expiry, audit | T01, T03 | M | — | | todo |
 | T07 | Bridge host: protocol, sessions, approval, install | T02, T05, T06 | L | required | | todo |

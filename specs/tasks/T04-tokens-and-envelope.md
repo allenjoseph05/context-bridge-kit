@@ -39,7 +39,22 @@ Choosing what goes into the pack (T05, T19). Bundle zip (T05).
 The NOTICE wording in compiler.md seems to need changes; wording is part of the spec.
 
 ## Done when
-- [ ] Tests pass; `pnpm check` green
-- [ ] `finish-task` run
+- [x] Tests pass; `pnpm check` green
+- [x] `finish-task` run
 
 ## Implementation notes
+- `@cb/tokens` (`packages/tokens/src/index.ts`): `countTokens` (js-tiktoken `o200k_base` via `js-tiktoken/lite`,
+  encoder created lazily; special-token strings counted as plain text, never thrown), `IMAGE_TOKENS`,
+  `PROFILE_BUDGET`, `ROUTE_BUDGET`, `PROFILE_RECENT_TURNS` (second_opinion = 2), `effectiveBudget`,
+  `destinationProfile`. No `node:` imports. Depends on `@cb/schema` for `Profile`/`Route`/`DestinationProfile`.
+- `acceptsFiles` is true only for `bundle` (mcp pulls files via `get_attachment`); data-model.md updated.
+- `@cb/compiler` (`packages/compiler/src/envelope.ts`, re-exported from `index.ts`): `newFence(content, rng?)`
+  with `rng: () => Uint8Array` (first 3 bytes used); `renderEnvelope(pack, { fence })`.
+  Callers choose the fence with `newFence(JSON.stringify(pack))`; `renderEnvelope` throws if the fence occurs in content.
+- Line formats are fixed by `packages/compiler/test/__snapshots__/envelope.test.ts.snap` (see decisions.md T04).
+  Item lines: `- text (t012, t015) [unverified]`; refs only on Decisions; `[unverified]` always last.
+- `renderEnvelope` renders `push.items` as given (no status filtering) and always uses `item.text`;
+  second_opinion evidence rendering and blind filtering belong to T19, item selection to T05/T19.
+- Gaps for T05: pack artifacts carry no code `lang` and pack attachments no `name`, so the envelope cannot yet
+  print "```lang" for artifacts or "[image a002: name]"; it prints `[image a002]`. Needs a schema field or lookup.
+
