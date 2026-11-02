@@ -52,7 +52,11 @@ importers:
 
   packages/mcp-server: {}
 
-  packages/sanitizer: {}
+  packages/sanitizer:
+    dependencies:
+      '@cb/schema':
+        specifier: workspace:*
+        version: link:../schema
 
   packages/schema:
     dependencies:

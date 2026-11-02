@@ -13,16 +13,25 @@ type SanitizeContext = { redactions: Map<string, Redaction> };   // one per sess
 function createContext(): SanitizeContext;
 function sanitizeText(text: string, ctx: SanitizeContext,
                       opts?: { isCode?: boolean }): { text: string; flags: Flag[] };
-function sanitizeTranscript(t: Transcript, ctx: SanitizeContext): { transcript: Transcript; flags: Record<string, Flag[]> };
+type PartFlag = Flag & { part: number };   // part: index of the part within the turn
+function sanitizeTranscript(t: Transcript, ctx: SanitizeContext):
+  Promise<{ transcript: Transcript; flags: Record<string, PartFlag[]> }>;   // keyed by turn id
 function unredact(text: string, placeholders: string[], ctx: SanitizeContext): string;
 ```
+`Flag.index` is a character offset into the sanitised text (`sanitizeText`) or into the
+sanitised text of part `part` (`sanitizeTranscript`); flags never join parts. `flags` holds only
+turns with at least one flag. `sanitizeTranscript` is async because it recomputes turn hashes with
+WebCrypto (`sha256HexWeb`): the package runs in the extension too, where `node:crypto` does not
+exist; the source imports no `node:` module.
 
 ## Steps, in this order
 1. **Invisible and control characters** — remove U+200B, U+200C, U+200E, U+200F, U+202A–U+202E,
    U+2060–U+2064, U+2066–U+2069, U+FEFF, the tag block U+E0000–U+E007F, and C0 controls except
-   `\n`, `\t`. Keep U+200D (zero-width joiner, used in emoji).
-2. **Markup remnants** (text parts only, not code) — remove `<script>…</script>`, `<style>…</style>`,
-   and HTML comments.
+   `\n`, `\t`, `\r`. Keep U+200D (zero-width joiner, used in emoji). Line endings are normalised:
+   `\r\n` and a lone `\r` become `\n`.
+2. **Markup remnants** (`text` and `table` parts only; not `code` or `tool_output`, which may be
+   code or HTML output that must stay exact) — remove `<script>…</script>`, `<style>…</style>`,
+   and HTML comments. Steps 1, 3, 4 and 5 apply to every sanitised part kind.
 3. **Secrets** — known formats first, then high entropy. Applies to code parts too.
    | Kind | Pattern (indicative) |
    | --- | --- |
@@ -34,14 +43,17 @@ function unredact(text: string, placeholders: string[], ctx: SanitizeContext): s
    | JWT | `eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+` |
    | Private key | `-----BEGIN [A-Z ]*PRIVATE KEY-----` … `-----END [A-Z ]*PRIVATE KEY-----` |
    | Assignment | `(password\|passwd\|secret\|token\|api[_-]?key)\s*[:=]\s*\S{6,}` → redact the value only |
-   | High entropy | token of ≥ 32 chars from `[A-Za-z0-9+/_=-]`, Shannon entropy ≥ 4.2 bits/char, ≥ 2 character classes |
-   Hex hashes (git SHAs, SHA-256) have entropy ≤ 4.0 and must **not** be redacted.
+   | High entropy | token of ≥ 32 chars from `[A-Za-z0-9+/_=-]`, Shannon entropy ≥ 4.2 bits/char, ≥ 2 character classes, and at least one digit or one of `+ / =` |
+   Hex hashes (git SHAs, SHA-256) have entropy ≤ 4.0 and must **not** be redacted. Long camelCase
+   identifiers can come close to 4.2 bits/char; the digit-or-`+/=` requirement keeps them.
 4. **Personal data** — emails; phone numbers (E.164 or national with ≥ 9 digits); IBANs validated by
    mod-97 checksum; card numbers 13–19 digits validated by Luhn. Unvalidated look-alikes stay.
 5. **Instruction flags** — case-insensitive patterns, flagged not removed:
    `ignore (all |any )?(previous|prior|above) (instructions|prompts)`, `disregard (the|all|your) `,
    `you are now`, `new instructions:`, `system prompt`, `<\|im_start\|>`, `\[INST\]`,
-   line-start `(system|assistant|developer)\s*:` inside a turn's text.
+   line-start `(system|assistant|developer)\s*:` inside a turn's text; leading whitespace and `>`
+   quote markers before the role word are allowed (the match starts at the role word). A flag only
+   highlights, so false positives are cheap and misses are not.
 
 ## Placeholders
 `[SECRET_1]`, `[EMAIL_1]`, `[PHONE_1]`, `[IBAN_1]`, `[CARD_1]`; numbering per kind, per session.
