@@ -133,11 +133,17 @@ export const contextPack = {
     artifacts: [
       { turnId: "t002", partIndex: 0, kind: "code", content: "const x = 1;\n", sha256: HEX64 },
     ],
-    attachments: [{ id: "a001", as: "image" }, { id: "a003", as: "excerpt", excerpt: "Page 1…" }],
+    attachments: [
+      { id: "a001", as: "image" },
+      { id: "a003", as: "excerpt", excerpt: "Page 1…" },
+    ],
     recentTurns: [turnAssistant],
     manifest: manifestEntries,
   },
-  pull: { transcriptRef: "vault/s_0b7e11c3/transcript.json", indexRef: "vault/s_0b7e11c3/index.json" },
+  pull: {
+    transcriptRef: "vault/s_0b7e11c3/transcript.json",
+    indexRef: "vault/s_0b7e11c3/index.json",
+  },
   redactions: [{ placeholder: "[EMAIL_1]", kind: "email" }],
   notices: ["Model unavailable: verbatim pack"],
   stats,
@@ -153,7 +159,12 @@ export const packMeta = {
   stats,
 };
 
-export const flag = { ref: "t001", kind: "possible_instruction", match: "ignore previous", index: 12 };
+export const flag = {
+  ref: "t001",
+  kind: "possible_instruction",
+  match: "ignore previous",
+  index: 12,
+};
 
 const RID = "3f1c2a9e-5b7d-4c1e-9a2b-6d8e0f1a2b3c";
 
@@ -257,7 +268,11 @@ export const hostToExt = {
     requestId: RID,
     packId: "cp_9f2c41ab",
     route: "mcp",
-    deliverable: { kind: "mcp", packId: "cp_9f2c41ab", instruction: "Load context pack cp_9f2c41ab" },
+    deliverable: {
+      kind: "mcp",
+      packId: "cp_9f2c41ab",
+      instruction: "Load context pack cp_9f2c41ab",
+    },
   },
   deleted: { type: "deleted", requestId: RID, packId: "cp_9f2c41ab" },
   packs: { type: "packs", requestId: RID, packs: [packMeta] },
@@ -269,5 +284,5 @@ export const hostToExt = {
     recoverable: true,
     fallback: "verbatim",
   },
-  chunk: { type: "chunk", messageId: "m1", index: 0, count: 2, data: "{\"type\":\"pre" },
+  chunk: { type: "chunk", messageId: "m1", index: 0, count: 2, data: '{"type":"pre' },
 } as const;

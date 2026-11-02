@@ -69,7 +69,9 @@ describe("@cb/schema schemas", () => {
     expect(ContextPack.safeParse({ ...ex.contextPack, id: "cp_9F2C41AB" }).success).toBe(false);
     expect(ContextPack.safeParse({ ...ex.contextPack, id: "cp_9f2c41a" }).success).toBe(false);
     expect(PackMeta.safeParse({ ...ex.packMeta, id: "pack_1" }).success).toBe(false);
-    expect(ManifestEntry.safeParse({ ref: "turn-1", what: "x", why: "budget" }).success).toBe(false);
+    expect(ManifestEntry.safeParse({ ref: "turn-1", what: "x", why: "budget" }).success).toBe(
+      false,
+    );
     // bad hash
     expect(Turn.safeParse({ ...ex.turnUser, sha256: "abc" }).success).toBe(false);
     // unknown enum values
@@ -78,7 +80,8 @@ describe("@cb/schema schemas", () => {
   });
 
   it("T01 topic required for decisions", () => {
-    const { topic: _topic, ...noTopic } = ex.itemDraft;
+    const { topic, ...noTopic } = ex.itemDraft;
+    expect(topic).toBe("database");
     expect(ItemDraft.safeParse({ ...noTopic, kind: "decision" }).success).toBe(false);
     expect(ItemDraft.safeParse({ ...noTopic, kind: "constraint" }).success).toBe(false);
     expect(
