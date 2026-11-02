@@ -62,8 +62,26 @@ A marker could appear legitimately inside content (e.g. "Note: …") and you are
 split; the default is: only the listed markers, only at line start.
 
 ## Done when
-- [ ] Tests pass; `pnpm check` green
-- [ ] Fixtures contain no real personal data
-- [ ] `finish-task` run
+- [x] Tests pass; `pnpm check` green
+- [x] Fixtures contain no real personal data
+- [x] `finish-task` run
 
 ## Implementation notes
+- `@cb/adapters` exports `parsePaste`, `PASTE_ADAPTER` (`paste.ts`) and `splitMarkdown`,
+  `fenceOpen`, `fenceCloses`, `isTableStart`, `Fence` (`markdown.ts`). Depends on
+  `@cb/schema` (workspace) with a tsconfig project reference.
+- `parsePaste` normalises `\r\n`/`\r` to `\n` before parsing (Windows clipboard); code content is
+  byte-identical to the text between fences after that. Only ```` ``` ```` fences (3+ backticks), no `~~~`;
+  an unclosed fence runs to the end of the turn. Tables need a `|` header line followed by a
+  delimiter row containing `|`; the table runs until a blank line or a line without `|`.
+  Text parts are trimmed; blank text is dropped. >999 turns → `CaptureError parse_failed`.
+- Warnings: `"no roles found"`, `"text before the first role marker was kept as a user turn"`,
+  `"N empty turn(s) skipped"`.
+- Gotcha for T08: `@cb/adapters` itself has no `node:` imports, but it imports the `@cb/schema`
+  root, whose `hash.ts` imports `node:crypto` at top level. The extension bundle will need either a
+  browser-safe schema entry point or a bundler shim. Not changed here (out of scope).
+- Fixtures: `packages/schema/test-fixtures/{small,injection,long}-chat.json`, exported as
+  `@cb/schema/fixtures/*`. Turn hashes are real (`sha256Hex(canonicalJson(parts))`).
+  small-chat: `t003` user "use SQLite", `t006` assistant "Switch to Postgres", the code part is in
+  `t004` (sql), the key and email are in `t007` (text). injection-chat: the injection is in `t003`.
+  long-chat: regenerate with `pnpm --filter @cb/schema gen:long`; edit the script, never the JSON.
