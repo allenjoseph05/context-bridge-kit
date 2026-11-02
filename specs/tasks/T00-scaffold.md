@@ -53,9 +53,25 @@ Any real code, runtime dependencies, the extension build (T08).
 A package in the table cannot be created as specified, or a tool version conflict needs a choice.
 
 ## Done when
-- [ ] `pnpm check` green
-- [ ] Criterion 3 verified and noted below
-- [ ] `finish-task` run
+- [x] `pnpm check` green
+- [x] Criterion 3 verified and noted below
+- [x] `finish-task` run
 
 ## Implementation notes
-<!-- filled by the agent at finish-task -->
+- Built: root pnpm workspace (`packages/*`, `evals`), 12 `@cb/*` skeletons (schema, sanitizer, tokens,
+  compiler, extractor, attachments, index, vault, host, mcp-server, adapters, extension) and
+  `evals/package.json` (`@cb/evals`). Each package has `src/index.ts` (`export {};`), a `tsconfig.json`
+  (composite, rootDir `src`, outDir `dist`) and `test/smoke.test.ts`.
+- `pnpm typecheck` uses the root `tsconfig.json` (noEmit; covers the src and test files of every package,
+  plus `evals/**`). `pnpm build` uses `tsconfig.build.json` (project references): add each new package there.
+- NodeNext imports: relative paths carry `.js` (`../src/index.js`); vitest resolves these to `.ts`.
+  `verbatimModuleSyntax` is on, so use `import type` for types. `@types/node` is not installed yet: the
+  first task that uses Node APIs adds it (as a dev dependency).
+- Tooling (chosen by the human, see decisions.md): vitest ~3.2.7 (keeps `vitest.workspace.ts`; prints a harmless
+  deprecation notice), TypeScript ~6.0.3, eslint ^10, typescript-eslint ^8.72, prettier ^3.
+- Criterion 1: `pnpm install --frozen-lockfile && pnpm check` exits 0 on a fresh `git clone`.
+- Criterion 3: I added `console.log`, `console.error` and `console.warn` to `packages/host/src/index.ts`.
+  `pnpm lint` exited 1 with exactly one error: `no-console` on the `console.log` line. The other two calls
+  are allowed. After removing the lines, lint exits 0.
+- Gotcha: git has `core.autocrlf=true` on this machine, but `.prettierrc` sets `endOfLine: lf`. Prettier is not
+  part of `check` yet; consider adding a `.gitattributes` (`* text=auto eol=lf`) before enforcing formatting.
