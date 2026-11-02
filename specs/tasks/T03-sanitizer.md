@@ -47,8 +47,26 @@ A rule from sanitizer.md produces false positives on the seed fixtures that woul
 Report the case; do not loosen a rule silently.
 
 ## Done when
-- [ ] Test commit reviewed by the human (`review` status), then all tests green
-- [ ] `pnpm check` green
-- [ ] `finish-task` run
+- [x] Test commit reviewed by the human (`review` status), then all tests green
+- [x] `pnpm check` green
+- [x] `finish-task` run
 
 ## Implementation notes
+- API in `packages/sanitizer/src/index.ts`: `createContext`, `sanitizeText`, `unredact` (sync) and
+  `sanitizeTranscript` (**async**, WebCrypto hashes); types `Flag`, `PartFlag` (`part` = index in the
+  turn), `Redaction`, `RedactionKind`, `SanitizeContext`. `flags` is keyed by turn id, flagged turns only.
+- Order per part: invisible (`\r\n`/`\r` → `\n`) → markup (text and table only) → secrets (known
+  formats, then assignments, then entropy) → PII → flags (indexes into the sanitised text).
+  `code` and `tool_output` use `{ isCode: true }`; math, citation and attachment parts are untouched.
+- PII is one leftmost-first scan (email | IBAN | number) so a checksum-failing IBAN-shaped run is never
+  re-read as a card or phone number. A number is a card if 13–19 digits, Luhn-valid, no `+`/`.`; else a
+  phone if `+` and 8–15 digits or 9–15 digits; else kept. Numbers next to `-`, `.`, `/` or word chars
+  are skipped (UUIDs, dates, paths).
+- Assignment values keep surrounding quotes and trailing `,;.:)}]`; values already a placeholder are skipped.
+- Placeholder numbers are per kind per context; `unredact` replaces exact `[KIND_n]` strings only.
+- Seed fixtures: only small-chat t007 changes; injection t003 gets one flag; long-chat (60 turns) is
+  unchanged with no flags.
+- No `node:` imports in src (purity test). `@cb/schema`'s index still loads `node:crypto` through
+  `hash.ts`; bundling for the extension (T08) must handle that, as for `@cb/adapters`.
+- Test review changes (tool_output keeps markup, `\r` normalised, quoted/indented role flags, entropy needs
+  a digit or `+/=`): see decisions.md 2026-11-02 · T03.

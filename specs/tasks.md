@@ -11,7 +11,7 @@ Status: `todo` · `in_progress` · `review` (tests or code waiting for the human
 | T00 | Scaffold the monorepo | — | S | — | | done |
 | T01 | Schemas and IDs (`@cb/schema`) | T00 | M | — | | done |
 | T02 | Paste parser and seed fixtures | T01 | S | — | | done |
-| T03 | Sanitiser (`@cb/sanitizer`) | T01, T02 | M | required | | in_progress |
+| T03 | Sanitiser (`@cb/sanitizer`) | T01, T02 | M | required | | done |
 | T04 | Token counting, budgets, envelope | T01 | S | — | | todo |
 | T05 | Compiler, verbatim mode, coverage, bundle | T03, T04 | M | required | | todo |
 | T06 | Vault, expiry, audit | T01, T03 | M | — | | todo |
