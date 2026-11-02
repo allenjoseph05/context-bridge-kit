@@ -8,5 +8,9 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     }
+  },
+  "dependencies": {
+    "@cb/schema": "workspace:*",
+    "js-tiktoken": "^1.0.21"
   }
 }
