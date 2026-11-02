@@ -52,6 +52,11 @@ Review details and delivery (T09). Page adapters (T12). Files (T16).
 `openPanelOnActionClick` or native messaging behaves differently from the plan in your Chrome
 version; record what you observed in `decisions.md`.
 
+## Implementation hints
+- `@cb/tokens` (used by the token meter) bundles `js-tiktoken` with the `o200k_base` ranks, which adds
+  several MB to the extension bundle. Acceptable, but check the built size and record it in the
+  implementation notes.
+
 ## Done when
 - [ ] Tests pass; `pnpm check` green; manual criterion 6 recorded
 - [ ] Extension ID recorded in `decisions.md`

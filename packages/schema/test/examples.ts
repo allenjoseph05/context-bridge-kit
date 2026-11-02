@@ -131,11 +131,18 @@ export const contextPack = {
   push: {
     items: [item],
     artifacts: [
-      { turnId: "t002", partIndex: 0, kind: "code", content: "const x = 1;\n", sha256: HEX64 },
+      {
+        turnId: "t002",
+        partIndex: 0,
+        kind: "code",
+        lang: "ts",
+        content: "const x = 1;\n",
+        sha256: HEX64,
+      },
     ],
     attachments: [
-      { id: "a001", as: "image" },
-      { id: "a003", as: "excerpt", excerpt: "Page 1…" },
+      { id: "a001", as: "image", name: "screenshot.png", mime: "image/png" },
+      { id: "a003", as: "excerpt", name: "spec.pdf", mime: "application/pdf", excerpt: "Page 1…" },
     ],
     recentTurns: [turnAssistant],
     manifest: manifestEntries,

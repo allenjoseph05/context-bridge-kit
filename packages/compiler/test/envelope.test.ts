@@ -117,6 +117,7 @@ function smallPack(canPull = true): ContextPack {
         turnId: "t004",
         partIndex: 1,
         kind: "code",
+        lang: "sql",
         content: "CREATE TABLE events (id text primary key);",
         sha256: SHA,
       },
@@ -129,8 +130,14 @@ function smallPack(canPull = true): ContextPack {
       },
     ],
     attachments: [
-      { id: "a001", as: "image" },
-      { id: "a002", as: "excerpt", excerpt: "Throughput target: 2,000 events/s." },
+      { id: "a001", as: "image", name: "erd.png", mime: "image/png" },
+      {
+        id: "a002",
+        as: "excerpt",
+        name: "load-test.pdf",
+        mime: "application/pdf",
+        excerpt: "Throughput target: 2,000 events/s.",
+      },
     ],
     recentTurns: [
       turn("t005", "user", [{ kind: "text", text: "What about snapshots?" }]),
@@ -241,6 +248,12 @@ describe("envelope", () => {
     expect(env).toContain("[t005 · user]");
     expect(env).toContain("[t006 · assistant]");
     expect(env).toContain("```sql\nSELECT 1;\n```");
+    // Artifacts carry their code-fence language; attachments their name.
+    expect(env).toContain(
+      "[t004 · part 1 · code]\n```sql\nCREATE TABLE events (id text primary key);\n```",
+    );
+    expect(env).toContain("[image a001: erd.png]");
+    expect(env).toContain("[excerpt a002: load-test.pdf]\nThroughput target: 2,000 events/s.");
 
     // Empty sections are omitted; no pull line without canPull.
     const minimal = pack({

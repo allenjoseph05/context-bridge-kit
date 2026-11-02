@@ -121,8 +121,10 @@ type ContextPack = {
   push: {
     items: Item[];                    // in compiler priority order
     artifacts: Array<{ turnId: string; partIndex: number; kind: "code" | "table" | "math";
+                       lang?: string;           // code-fence language, from the code part
                        content: string; sha256: string }>;
     attachments: Array<{ id: string; as: "image" | "excerpt" | "summary" | "file";
+                         name: string; mime: string;   // from the transcript Attachment
                          excerpt?: string }>;
     recentTurns: Turn[];              // verbatim
     manifest: ManifestEntry[];

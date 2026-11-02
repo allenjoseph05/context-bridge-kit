@@ -69,7 +69,7 @@ function renderArtifact(a: ContextPack["push"]["artifacts"][number]): string {
   const header = `[${a.turnId} · part ${a.partIndex} · ${a.kind}]`;
   switch (a.kind) {
     case "code":
-      return `${header}\n${codeFence(a.content)}`;
+      return `${header}\n${codeFence(a.content, a.lang ?? "")}`;
     case "table":
       return `${header}\n${a.content}`;
     case "math":
@@ -78,7 +78,7 @@ function renderArtifact(a: ContextPack["push"]["artifacts"][number]): string {
 }
 
 function renderAttachment(a: ContextPack["push"]["attachments"][number]): string {
-  const header = `[${a.as} ${a.id}]`;
+  const header = `[${a.as} ${a.id}: ${a.name}]`;
   return a.excerpt !== undefined && a.excerpt !== "" ? `${header}\n${a.excerpt}` : header;
 }
 

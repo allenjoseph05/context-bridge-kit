@@ -55,6 +55,5 @@ The NOTICE wording in compiler.md seems to need changes; wording is part of the 
   Item lines: `- text (t012, t015) [unverified]`; refs only on Decisions; `[unverified]` always last.
 - `renderEnvelope` renders `push.items` as given (no status filtering) and always uses `item.text`;
   second_opinion evidence rendering and blind filtering belong to T19, item selection to T05/T19.
-- Gaps for T05: pack artifacts carry no code `lang` and pack attachments no `name`, so the envelope cannot yet
-  print "```lang" for artifacts or "[image a002: name]"; it prints `[image a002]`. Needs a schema field or lookup.
-
+- Resolved after T04 (fix(schema)): pack artifacts now carry `lang?` and pack attachments `name` + `mime`; the envelope
+  prints "```lang" and "[image a002: name]". T05 must fill these from the transcript parts and attachments.

@@ -21,7 +21,11 @@ export const ROUTE_BUDGET: Readonly<Record<Route, number>> = {
   clipboard: 8000,
 };
 
-/** How many recent turns each profile pushes verbatim (second_opinion: last user + last assistant). */
+/**
+ * How many recent turns each profile pushes verbatim. second_opinion is not "the last 2 turns": it
+ * pushes the last user turn and the last assistant turn (omitted when blind); T19 selects them by
+ * role, and 2 is only the upper bound.
+ */
 export const PROFILE_RECENT_TURNS: Readonly<Record<Profile, number>> = {
   continue: 4,
   rescue: 10,

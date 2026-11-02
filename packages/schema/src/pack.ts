@@ -65,6 +65,7 @@ export const ContextPack = z.object({
         turnId: TurnIdSchema,
         partIndex: z.number().int().nonnegative(),
         kind: z.enum(["code", "table", "math"]),
+        lang: z.string().optional(),
         content: z.string(),
         sha256: Sha256Hex,
       }),
@@ -73,6 +74,8 @@ export const ContextPack = z.object({
       z.object({
         id: z.string().regex(ATTACHMENT_ID, "attachment id must look like a001"),
         as: z.enum(["image", "excerpt", "summary", "file"]),
+        name: z.string(),
+        mime: z.string(),
         excerpt: z.string().optional(),
       }),
     ),
