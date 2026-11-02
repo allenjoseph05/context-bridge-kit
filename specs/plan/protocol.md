@@ -23,7 +23,7 @@ change no state.
 | type | Fields | Reply |
 | --- | --- | --- |
 | `hello` | `protocol: 1` | `hello_ok { protocol, hostVersion, model: { available, name? } }` |
-| `ingest` | `transcript: Transcript` | `ingested { sessionId, turns, attachments, flags, missingFiles, suggestedProfile, suggestedSelection }` |
+| `ingest` | `transcript: Transcript` | `ingested { sessionId, turns, attachments, flags, redactions, missingFiles, suggestedProfile, suggestedSelection }` |
 | `add_file` | `sessionId, attachmentId?, name, mime, dataBase64` | `file_added { attachment }` |
 | `compile` | `sessionId, selection: string[], profile, route, mode: "condensed" \| "verbatim", blind?: boolean` | zero or more `progress { stage, done, total }`, then `preview` |
 | `revise` | `sessionId, previewId, edits` | `preview` |
@@ -32,6 +32,22 @@ change no state.
 | `list_packs` | — | `packs { packs: PackMeta[] }` |
 
 `edits = { removeItemIds: string[], keepUngroundedIds: string[], unredact: string[], moveToManifest: string[], moveToPush: string[] }`.
+
+### Field types (T01)
+- `requestId`: a uuid string on every extension → host message; every host → extension reply
+  echoes it. A `chunk` carries it only optionally (it is added after the reply is built).
+- `Flag = { ref: string; kind: "possible_instruction" | "redacted" | "ungrounded"; match?: string; index?: number }`.
+  `ref` is a turn, attachment or item id; `match` is the matched text (never a redacted value);
+  `index` is its character offset. Used by `ingested.flags` and `preview.flags`.
+- `ingested`: `turns: Turn[]` (the sanitised turns the host will actually use, so Select shows
+  them), `attachments: Attachment[]`, `flags: Flag[]`,
+  `redactions: Array<{ placeholder: string; kind: string }>` (no values),
+  `missingFiles: string[]` (attachment ids), `suggestedProfile: Profile`,
+  `suggestedSelection: string[]` (turn ids only).
+- `progress`: `stage: "attachments" | "extract" | "ground" | "compile"`; `done`, `total` are
+  non-negative integers.
+- `preview.stats` has the shape of `ContextPack.stats`.
+- `edits` is a strict object; all five arrays are required.
 
 ## Host → extension
 - `preview { sessionId, previewId, hash, envelope: string, images: Array<{ attachmentId, mime, dataBase64 }>, flags, cutList: ManifestEntry[], notices: string[], stats }`
