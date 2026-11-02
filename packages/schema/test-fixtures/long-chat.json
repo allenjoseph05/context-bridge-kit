@@ -1,0 +1,690 @@
+{
+  "schema": "transcript/0.2",
+  "source": {
+    "assistant": "claude",
+    "adapter": "fixture@0.1",
+    "title": "Job runner design (synthetic, generated)",
+    "confidence": "structured"
+  },
+  "capturedAt": "2026-11-02T10:00:00.000Z",
+  "turns": [
+    {
+      "id": "t001",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 1: what should the job runner do about logging?"
+        }
+      ],
+      "sha256": "6850f58224d7b276f7cb1c84b109436e79fbd95507702db1fcad7b9742f52229"
+    },
+    {
+      "id": "t002",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 2: keep logging simple and document the default."
+        }
+      ],
+      "sha256": "c9aa0ea607db5e126d8fcc48825687836aaaf500ff3b699e1e6bf5a73b0e50e0"
+    },
+    {
+      "id": "t003",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 3: what should the job runner do about retries?"
+        }
+      ],
+      "sha256": "8b4c621186c2ec9cb7776a13d48ce30a2fce30d3dd15ba197f5497614b38668a"
+    },
+    {
+      "id": "t004",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 4: keep retries simple and document the default."
+        }
+      ],
+      "sha256": "bfd2323f9f852bf42af816d6f53355880fb7b470cb20624fc7bffc55706c5f02"
+    },
+    {
+      "id": "t005",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 5: what should the job runner do about config?"
+        }
+      ],
+      "sha256": "5bd5284482e0c2d3eb5d7266c7920f8f544e28b8732e9ec8a5ec89f1ac6386cc"
+    },
+    {
+      "id": "t006",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 6: keep config simple and document the default."
+        }
+      ],
+      "sha256": "8a2e2355b38c86bc68505d62ea0af20aff30dd28681df68e590f82960a8b4861"
+    },
+    {
+      "id": "t007",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 7: what should the job runner do about metrics?"
+        }
+      ],
+      "sha256": "35b534891bfc2d5c9e84e7064a39ad1c30c23eced4c2c7087e297b33ed177462"
+    },
+    {
+      "id": "t008",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 8: keep metrics simple and document the default."
+        }
+      ],
+      "sha256": "0c10372d4941c80007326b86eb3eed6f5bb483b2a76c558de448c2a6a6137d6b"
+    },
+    {
+      "id": "t009",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 9: what should the job runner do about caching?"
+        }
+      ],
+      "sha256": "beccd9013f025912a41f1f5ba259613f1bd50dd0fac9441efe9bf19cf783d9c1"
+    },
+    {
+      "id": "t010",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 10: keep caching simple and document the default."
+        },
+        {
+          "kind": "code",
+          "lang": "ts",
+          "content": "export const cachingStep10 = (attempt: number): number =>\n  Math.min(1000 * 2 ** attempt, 30_000);\n"
+        }
+      ],
+      "sha256": "6e29e09d328a6c74e2b18a5e8d809ddd58b03ca2f78b2b661c80b1738d7ff982"
+    },
+    {
+      "id": "t011",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 11: what should the job runner do about timeouts?"
+        }
+      ],
+      "sha256": "bdce01222a1544cad4ce9092804e03a3c98febd71132daa44b67842786037d13"
+    },
+    {
+      "id": "t012",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 12: keep timeouts simple and document the default."
+        }
+      ],
+      "sha256": "f9b65702ae50662ea8444503185a66fa12e9362dc45a938fc1197754406de9f3"
+    },
+    {
+      "id": "t013",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 13: what should the job runner do about logging?"
+        }
+      ],
+      "sha256": "732c0f93144341f5cd10b612ff1a20ebc9aec66b907eaa9a0f817e6da5cb9482"
+    },
+    {
+      "id": "t014",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 14: keep logging simple and document the default."
+        }
+      ],
+      "sha256": "81a67a1cc3a4df10b23f278b491566d319199500ab636f3ee2975c52888842b7"
+    },
+    {
+      "id": "t015",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 15: what should the job runner do about retries?"
+        }
+      ],
+      "sha256": "23ec844930f2bddc16ef914448696b50e2ccca7ecca1bebfb2130b1905b78c5d"
+    },
+    {
+      "id": "t016",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 16: keep retries simple and document the default."
+        }
+      ],
+      "sha256": "cad320a6dbb28de4052e13841bf9f50b8baa2f788b6368ac5ecc5fd3e40f5a3a"
+    },
+    {
+      "id": "t017",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 17: what should the job runner do about config?"
+        }
+      ],
+      "sha256": "681a48708f226630b9d95fc3fc288e9e1ca3a6c35ccf17b426c022cdec5c8253"
+    },
+    {
+      "id": "t018",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 18: keep config simple and document the default."
+        }
+      ],
+      "sha256": "a1dc91df422a3228702e634d0e01345bfcd67ee52699d1aa499a69d32d6112d9"
+    },
+    {
+      "id": "t019",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 19: what should the job runner do about metrics?"
+        }
+      ],
+      "sha256": "14aac9ae7bd6584f72de53078e542b13422be3c5e1edbd557979f1007098bb74"
+    },
+    {
+      "id": "t020",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 20: keep metrics simple and document the default."
+        }
+      ],
+      "sha256": "1c452aac2bf039004ff9f8c5da87d386367076ee4f668e62b80d7ac0a5a113db"
+    },
+    {
+      "id": "t021",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 21: what should the job runner do about caching?"
+        }
+      ],
+      "sha256": "60197b03ba21db77906a49a1e18fe5d84aab234586c2e552e6b3f3fbf702cf8c"
+    },
+    {
+      "id": "t022",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 22: keep caching simple and document the default."
+        }
+      ],
+      "sha256": "8030fcf959f6f7e075e3c79af04a013f804cbd944514d60aa68c16541475859f"
+    },
+    {
+      "id": "t023",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 23: what should the job runner do about timeouts?"
+        }
+      ],
+      "sha256": "c5eb48a60deaeb8bf9c9a9f5628271035f16822159fd5192c144abab973355c0"
+    },
+    {
+      "id": "t024",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 24: keep timeouts simple and document the default."
+        }
+      ],
+      "sha256": "43cc33798f3a91acb7077b58ef6e6523bf84f6b49d235a093b3f840a99fda977"
+    },
+    {
+      "id": "t025",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 25: what should the job runner do about logging?"
+        }
+      ],
+      "sha256": "dc9911bf937cdd9b81c5a41e1dbf571544f4d1b6cec7d2b8e6a27f4463554041"
+    },
+    {
+      "id": "t026",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 26: keep logging simple and document the default."
+        }
+      ],
+      "sha256": "c157b584c1c9bd3008ac87c79a4c08a3e1479d798efa0480295313d12565a1b1"
+    },
+    {
+      "id": "t027",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 27: what should the job runner do about retries?"
+        }
+      ],
+      "sha256": "bdd8b791e911173a269f8615b1989c01f401f38ec3d64fed8470465a8ecc6c59"
+    },
+    {
+      "id": "t028",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 28: keep retries simple and document the default."
+        }
+      ],
+      "sha256": "1ea4493e2cd9a95d67b9ae59e4d8d3a367b8dbe532f749c8ee541e495c6fe2dc"
+    },
+    {
+      "id": "t029",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 29: what should the job runner do about config?"
+        }
+      ],
+      "sha256": "48529ec605ae34b2d1df0ac6ca9f9c7216fa88e1a7cd43c3e37b94332747149e"
+    },
+    {
+      "id": "t030",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 30: keep config simple and document the default."
+        },
+        {
+          "kind": "code",
+          "lang": "ts",
+          "content": "export const configStep30 = (attempt: number): number =>\n  Math.min(1000 * 2 ** attempt, 30_000);\n"
+        }
+      ],
+      "sha256": "e1104182ee95e69409ec769804d6e05612b2ccf8752996e05c37acc0a22c9162"
+    },
+    {
+      "id": "t031",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 31: what should the job runner do about metrics?"
+        }
+      ],
+      "sha256": "1f22fbf347a9707125ebb10367b439d2e8e4a2975c0e6c784640e13918696216"
+    },
+    {
+      "id": "t032",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 32: keep metrics simple and document the default."
+        }
+      ],
+      "sha256": "286fef595a15c08c6e76157988cf73521f7a2db634bd95dac139e51a12891ade"
+    },
+    {
+      "id": "t033",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 33: what should the job runner do about caching?"
+        }
+      ],
+      "sha256": "3116517d3e658ccb3e796d11cee4ad2962dd243b9806b64211d79e56793f3ed3"
+    },
+    {
+      "id": "t034",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 34: keep caching simple and document the default."
+        }
+      ],
+      "sha256": "94a0cfe4609e2efbf3d6d0184f404fbd573bef92863c5b1eb77991159f14d513"
+    },
+    {
+      "id": "t035",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 35: what should the job runner do about timeouts?"
+        }
+      ],
+      "sha256": "a139cd308911156d8917f4ebcdbc54a311a690f75bc5ee48a8b1adf4faa4ca3a"
+    },
+    {
+      "id": "t036",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 36: keep timeouts simple and document the default."
+        }
+      ],
+      "sha256": "5587dfd37d8376c01106e760bf9cda2a18c6a2091a076da2b45b9a08e194aaac"
+    },
+    {
+      "id": "t037",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 37: what should the job runner do about logging?"
+        }
+      ],
+      "sha256": "b0b3e734d9fe99eb7127e0493ae495d9755c5ecb352becf6604cf39e3fd3d2d1"
+    },
+    {
+      "id": "t038",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 38: keep logging simple and document the default."
+        }
+      ],
+      "sha256": "463330d5455ed3989971a16c5c282f8a3d14cb8afc0c86ab0325b8969a8ad2be"
+    },
+    {
+      "id": "t039",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 39: what should the job runner do about retries?"
+        }
+      ],
+      "sha256": "17f8eec7775fc8ccb5ce503c9c9d14cb547817e486c285fbeba162c851c29764"
+    },
+    {
+      "id": "t040",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 40: keep retries simple and document the default."
+        }
+      ],
+      "sha256": "f20e6d809add2e6b178b5d89286e93280970d24fbb416b4eea193c8ab7b3168b"
+    },
+    {
+      "id": "t041",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 41: what should the job runner do about config?"
+        }
+      ],
+      "sha256": "58c73ab5a554addcc9343aff5289a1fda0bd9a1e581fbc7de473cd0d31a09deb"
+    },
+    {
+      "id": "t042",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 42: keep config simple and document the default."
+        }
+      ],
+      "sha256": "f534f2ec0da94df3f88227e38f26f8fd65c71ad0c71182f4af8631537642998a"
+    },
+    {
+      "id": "t043",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 43: what should the job runner do about metrics?"
+        }
+      ],
+      "sha256": "16994f0585367824c8e5021df6eaf6ef043085484504b003698d2a7bcfb8cbab"
+    },
+    {
+      "id": "t044",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 44: keep metrics simple and document the default."
+        }
+      ],
+      "sha256": "1c45e3c81f7c474771909f8825dc7ff03d63d192469344538096b7134db08550"
+    },
+    {
+      "id": "t045",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 45: what should the job runner do about caching?"
+        }
+      ],
+      "sha256": "4d773d6b3f9238962828502edc845c0fba2edb15c15c752f2b144e92b6b522b0"
+    },
+    {
+      "id": "t046",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 46: keep caching simple and document the default."
+        }
+      ],
+      "sha256": "1a50ca247745ad3337bc5e25fcb51a3ca13ab431a457e2baa807f25d2b0e9e4c"
+    },
+    {
+      "id": "t047",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 47: what should the job runner do about timeouts?"
+        }
+      ],
+      "sha256": "51dec37febee03a4df364cb12fa2627ae08bb7074fe3d9d95d02c71a8a01236c"
+    },
+    {
+      "id": "t048",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 48: keep timeouts simple and document the default."
+        }
+      ],
+      "sha256": "4d0bc8cbb1e088206441fd0fd3f589c261384aec14d99f95a3fc0a7b8309ec4d"
+    },
+    {
+      "id": "t049",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 49: what should the job runner do about logging?"
+        }
+      ],
+      "sha256": "c1b7c8b39c15e97e9b8c23ea45496eec5b91b00c8c48e32b07b12306f2aba9bb"
+    },
+    {
+      "id": "t050",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 50: keep logging simple and document the default."
+        }
+      ],
+      "sha256": "a1269493416d4ee8ef07d69c6b7ef6b041313c1cd76a7f91d9e2c4e3f49dc864"
+    },
+    {
+      "id": "t051",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 51: what should the job runner do about retries?"
+        }
+      ],
+      "sha256": "a7d032b2af0cecb704ac37cf7e951e3eb66fc416db01c1caa90650f151a28d77"
+    },
+    {
+      "id": "t052",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 52: keep retries simple and document the default."
+        }
+      ],
+      "sha256": "5c4d4eda1ba84b280a1efdf8343deb9feddd4819c6364ac1bf5f464ef17c2ce2"
+    },
+    {
+      "id": "t053",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 53: what should the job runner do about config?"
+        }
+      ],
+      "sha256": "043a52bfd93a56eec9339e9ae301d0a40bdeb6ab78f99d2241487416a21ba839"
+    },
+    {
+      "id": "t054",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 54: keep config simple and document the default."
+        }
+      ],
+      "sha256": "d3ad1e201ca55ab85ce61872a4ab3b44bd0b53a95643a832ef4cdc0c0a3a5589"
+    },
+    {
+      "id": "t055",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 55: what should the job runner do about metrics?"
+        },
+        {
+          "kind": "code",
+          "lang": "ts",
+          "content": "export const metricsStep55 = (attempt: number): number =>\n  Math.min(1000 * 2 ** attempt, 30_000);\n"
+        }
+      ],
+      "sha256": "359c16ee4b5ef09ee0925825369f8a7089b448be71c58df9f25559419a8f2fdf"
+    },
+    {
+      "id": "t056",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 56: keep metrics simple and document the default."
+        }
+      ],
+      "sha256": "4f514b8bbd16c20f1be941d680b456f7f4ace2e2ef6e1b336abc5cc490a9bd15"
+    },
+    {
+      "id": "t057",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 57: what should the job runner do about caching?"
+        }
+      ],
+      "sha256": "21833260bd9567c99f8c5004ee74cfb7f425ae16d95080f85f47ac7f51883ac4"
+    },
+    {
+      "id": "t058",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 58: keep caching simple and document the default."
+        }
+      ],
+      "sha256": "2d2f9a61b4bbc52ed23ea951d100bbacc49745af9e34f6692f535d06c8de6e47"
+    },
+    {
+      "id": "t059",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 59: what should the job runner do about timeouts?"
+        }
+      ],
+      "sha256": "831625e4fc31ddfbf39a8d0fdd2f3c7a20fd95eda9b415ec50506f50f44121ef"
+    },
+    {
+      "id": "t060",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Turn 60: keep timeouts simple and document the default."
+        }
+      ],
+      "sha256": "4fd37ffa2235950b99ef9f9c672cc3019c424b8d47fbedf186a35f5348b762fb"
+    }
+  ],
+  "attachments": [],
+  "extras": {},
+  "warnings": []
+}

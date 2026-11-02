@@ -1,2 +1,3 @@
-// @cb/adapters — public API. Nothing exported yet (T00 scaffold).
-export {};
+// @cb/adapters — public API. Browser-safe: no node: imports (see test/no-node.test.ts).
+export * from "./markdown.js";
+export * from "./paste.js";

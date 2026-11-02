@@ -1,0 +1,108 @@
+{
+  "schema": "transcript/0.2",
+  "source": {
+    "assistant": "gemini",
+    "adapter": "fixture@0.1",
+    "title": "Task tracker planning (synthetic)",
+    "confidence": "structured"
+  },
+  "capturedAt": "2026-11-02T10:00:00.000Z",
+  "turns": [
+    {
+      "id": "t001",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "I'm planning a small task-tracker app for a team of five. Help me pick a stack."
+        }
+      ],
+      "sha256": "c4465b6eab6f45dad7a6ff8edae494dfbcf3fae6b5529c14c2e1b0277f49d06d"
+    },
+    {
+      "id": "t002",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "A TypeScript API on Node with a React front end keeps one language across the app. The open question is storage."
+        }
+      ],
+      "sha256": "b34507fdf8a90ecb7114d5d19d3d21565a700c3a199e433fb7761eafaccb7e03"
+    },
+    {
+      "id": "t003",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Let's use SQLite for storage. It is one file and we have no one to run a database server."
+        }
+      ],
+      "sha256": "1b82ca129fa7069b5a99e5c1dddaf9a86cc47d50849706f84268816535c5d007"
+    },
+    {
+      "id": "t004",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "SQLite fits that well. A minimal schema:"
+        },
+        {
+          "kind": "code",
+          "lang": "sql",
+          "content": "CREATE TABLE tasks (\n  id INTEGER PRIMARY KEY,\n  title TEXT NOT NULL,\n  done INTEGER NOT NULL DEFAULT 0,\n  owner TEXT\n);"
+        }
+      ],
+      "sha256": "d5c77430542a587322261f94ee36addd6074ee49ad07f2f72bbfb5587a07c956"
+    },
+    {
+      "id": "t005",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Change of plan: three offices will write at the same time and the client wants managed backups. Is SQLite still right?"
+        }
+      ],
+      "sha256": "6210df570c7f704bc381acce0ae9fedea407407745df8a7b11d264699881516c"
+    },
+    {
+      "id": "t006",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "No. Switch to Postgres for storage: SQLite allows one writer at a time, and a managed Postgres gives you backups. The schema ports with small changes (SERIAL id, BOOLEAN done)."
+        }
+      ],
+      "sha256": "8860a5c3cacb89a499e45406ae9e9558df12ba349f2511745f9b0cf79a523df3"
+    },
+    {
+      "id": "t007",
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "OK. My draft .env has DATABASE_URL=postgres://app@localhost:5432/tasks and API_KEY=sk-proj-FAKEFAKEFAKEFAKEFAKE1234. Send the hosting invoice to jane.doe@example.com."
+        }
+      ],
+      "sha256": "ee7acb1fe9c78a08f466778031f7431f42105ed6095e4bd28982a2f7bf52ac5f"
+    },
+    {
+      "id": "t008",
+      "role": "assistant",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Do not commit that key; load it from the environment at runtime. Next steps: provision Postgres, migrate the schema, then schedule backups."
+        }
+      ],
+      "sha256": "33455e72498726a722ea2588d99edd4b786c1d6927834c2ce28a3f0d3924986b"
+    }
+  ],
+  "attachments": [],
+  "extras": {},
+  "warnings": []
+}
