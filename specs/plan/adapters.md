@@ -48,6 +48,9 @@ are used to bypass CORS (decision recorded in `decisions.md`).
 - Fenced code blocks (```` ``` ````) become `code` parts; Markdown tables become `table` parts.
 - No markers: one `user` turn plus warning "no roles found".
 - `adapter: "paste@0.1"`, `confidence: "inferred"`.
+- Signature: `parsePaste(text: string, opts?: { title?: string }): Promise<Transcript | CaptureError>`.
+  Async because turn hashes use WebCrypto (`sha256HexWeb`); it runs in the extension panel, so
+  `@cb/adapters` imports no `node:` module. Empty or whitespace-only text → `capture_empty`.
 
 ## Fixture rules
 - Fixture HTML must contain only synthetic content. Strip `<script>` tags and inline tracking
