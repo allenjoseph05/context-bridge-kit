@@ -52,8 +52,27 @@ Any logic beyond validation and IDs. Profiles' budget numbers (T04).
 data-model.md and protocol.md disagree on a field, or a field's meaning is unclear.
 
 ## Done when
-- [ ] All tests above pass; `pnpm check` green
-- [ ] No other package defines its own copy of these types
-- [ ] `finish-task` run
+- [x] All tests above pass; `pnpm check` green
+- [x] No other package defines its own copy of these types
+- [x] `finish-task` run
 
 ## Implementation notes
+- Built `packages/schema/src/{ids,transcript,items,pack,protocol,hash}.ts`, all re-exported from `index.ts`.
+  Each schema is exported under its type name (`Transcript` is both the zod schema and the inferred type).
+- Extra exports later tasks can use: `TurnIdSchema`, `AttachmentIdSchema`, `PackIdSchema`, `Sha256Hex`,
+  `IsoDateTime`, `TranscriptSource`, `PackStats`, `Redaction`, `Flag`, `Edits`, `ProgressStage`,
+  `Deliverable`, `ItemDrafts` (parse model output with this), one `*Msg` schema per message,
+  and the regexes `TURN_ID`, `ATTACHMENT_ID`, `ITEM_ID`, `PACK_ID`, `SESSION_ID`, `PREVIEW_ID`, `TURN_RANGE`, `SHA256_HEX`.
+- `turnId(n)`/`attachmentId(n)`/`itemId(n)` are 1-based and throw a RangeError outside 1–999 (a programming error, not an expected failure).
+- Random IDs use `crypto.getRandomValues` (Node 20 global and browser), so they work in the extension too.
+- `hash.ts` imports `node:crypto` (for `sha256Hex`), as the card requires. The extension (T08) must import
+  `sha256HexWeb` without bundling `node:crypto`: a bundler alias, or a `@cb/schema/web` entry if needed.
+- `itemDraftsJsonSchema()` inlines everything (`$refStrategy: "none"`), draft-07. The decision/constraint topic rule
+  can't be expressed in JSON Schema, so validate model output with `ItemDrafts`.
+- zod 3.25.x, not zod 4: zod-to-json-schema silently returns an empty schema for zod 4 (see decisions.md).
+- Objects strip unknown keys (zod default); only `Edits` is strict. `compile.selection` is `string[]` with no ID-format check
+  (protocol.md does not say which IDs it may hold).
+- Tooling: root dev dependency `@types/node@^20`. `packages/schema/tsconfig.json` sets `"types": ["node"]` because TypeScript 6
+  defaults `types` to `[]` and the package build otherwise misses Node globals. Other Node packages will need the same.
+- Test files were changed once after the test commit (370908e): lint/format only, plus one added assertion that
+  replaced an unused variable. No assertion was weakened.
