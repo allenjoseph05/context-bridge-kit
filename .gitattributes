@@ -1,0 +1,12 @@
+# Normalise line endings to LF in the repo and the working tree (matches .prettierrc endOfLine).
+* text=auto eol=lf
+
+# Binary files: never convert.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.zip binary
