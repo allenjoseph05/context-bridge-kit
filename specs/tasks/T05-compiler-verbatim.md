@@ -51,7 +51,24 @@ The budget cannot be met even with zero pushed turns (header + manifest alone to
 compacting the manifest further; do not silently drop manifest entries.
 
 ## Done when
-- [ ] Test commit reviewed, then green; `pnpm check` green
-- [ ] `finish-task` run
+- [x] Test commit reviewed, then green; `pnpm check` green
+- [x] `finish-task` run
 
 ## Implementation notes
+- `compile(input): Promise<CompileResult>` (async: WebCrypto hashes). Input adds `meta {id,title,createdAt,expiresAt,pull}`
+  and `fence` (host: `newFence(JSON.stringify(transcript))`). Returns `{ok:true, pack, envelope}` or
+  `{ok:false, error:{code:"over_budget", needed, budget}}`; `needed` = smallest pack over every drop count.
+  The host sends the returned envelope; never re-render. `redactions` is `[]` here: the host (T07) fills it.
+- Verbatim: drop oldest unforced turn, then oldest forced, until the rendered envelope fits; a quick
+  pre-skip drops turns whose summed tokens alone exceed the budget. No recent-turn cap (condensed only).
+  Blind → every assistant turn in the manifest as `profile` ("answer withheld on purpose (blind)").
+  Forced turn that does not fit → `budget` entry + notice. Attachments never pushed yet (T16).
+- Manifest `what` strings are short on purpose (`not selected`, `cut to fit the budget`): each entry costs
+  budget. Known limit: scattered selections can exceed budgets < ~1,000 (decisions.md 2026-11-03).
+- `checkCoverage` (coverage.ts) returns uncovered turn/attachment ids in transcript order.
+- `buildBundle(pack, envelope, files)` (bundle.ts): `files` keyed by attachment id, only pushed attachments
+  are zipped, names made path-safe, mtime = `pack.createdAt`.
+- `renderTurn` is now exported from envelope.ts (one-word change outside Deliverables) for `capturedTokens`.
+- Spec changes: protocol error `over_budget_orientation` → `over_budget` (+ optional `needed`/`budget` on
+  `ErrorMsg`; T19 card reworded). Test budgets are derived from the input (`needed` + a share of turn tokens),
+  approved by the human (`test(T05): derive budgets from input`).
