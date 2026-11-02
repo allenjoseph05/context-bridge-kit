@@ -24,6 +24,7 @@ nothing important unreachable. Deterministic; no model calls.
   | clipboard | 8,000 | false | false |
 
   All numbers are starting defaults, tuned by the evals (T21) and recorded in `decisions.md`.
+  The recent-turns counts apply to condensed mode only; verbatim mode is limited by the budget alone.
 
 ## API
 ```ts
@@ -35,11 +36,20 @@ function compile(input: {
   destination: DestinationProfile;
   excluded: string[];                 // ids the user removed at review
   forcedPush: string[];               // ids the user moved into push
-}): ContextPack;                      // pull refs and id/dates filled by the host
+  meta: { id; title; createdAt; expiresAt; pull };   // filled by the host
+  fence: string;                      // host: newFence(JSON.stringify(transcript))
+}): Promise<CompileResult>;           // async: artifact hashes use WebCrypto (browser-safe)
+type CompileResult =
+  | { ok: true; pack: ContextPack; envelope: string }   // envelope rendered only here
+  | { ok: false; error: { code: "over_budget"; needed: number; budget: number } };
+function checkCoverage(transcript: Transcript, pack: ContextPack): string[];  // ids not covered
 function renderEnvelope(pack: ContextPack, opts: { fence: string }): string;
 function newFence(content: string): string;   // random 6-hex, regenerated until absent from content
-function buildBundle(pack, envelope, files: Map<string, Uint8Array>): Uint8Array;   // zip
+function buildBundle(pack, envelope, files: Map<string, Uint8Array>): Uint8Array;   // zip; files keyed by attachment id
 ```
+`over_budget.needed` is the smallest pack compile can build for the input (the host maps it to the
+protocol error `over_budget`). The host never re-renders the envelope; it uses the one returned.
+`condensed` mode throws `NotImplementedError` until T19.
 
 ## Priority order (condensed mode)
 Fill the budget in this order. Each unit goes in **whole or not at all**. If a unit does not fit,
@@ -66,6 +76,15 @@ offers a larger budget or verbatim mode).
 ## Verbatim mode
 No items. Push selected turns verbatim, newest first, until the budget is full; the rest go to the
 manifest with `why: "budget"`. Artifacts stay inside their turns.
+- Budget: render the envelope, count it, drop the oldest pushed turn, repeat until it fits. Turns
+  in `forcedPush` are dropped last (after every unforced turn); a forced turn that still does not
+  fit goes to the manifest with `why: "budget"` and the pack gets a notice ("1 turn you included
+  didn't fit the budget; …"). `excluded` turns are treated as unselected (`excluded_by_user`).
+- Blind (second opinion): every assistant turn goes to the manifest with `why: "profile"` and
+  `what: "answer withheld on purpose (blind)"`, even if selected or forced (AC-13).
+- Attachments are not pushed until T16: `listed`/`unavailable` ones get `why: "unavailable"`;
+  the others take their turn's reason (`profile` when the turn is pushed).
+- If even the smallest pack does not fit, return `over_budget` (see §API).
 
 ## Profiles
 - **continue** — the full priority order.
@@ -102,3 +121,6 @@ Empty sections are omitted. Assistant-origin items get the `[unverified]` suffix
 ## Bundle (AC-17)
 Zip with `pack.md` (the envelope), `files/<attachmentId>-<name>` for pushed attachments with
 original bytes, and `manifest.json` (the pack's manifest + attachment list). No transcript.
+`manifest.json` is `{ manifest, attachments }` (the pushed attachments). File names are made safe
+as one path segment (`/ \ : * ? " < > |` and control characters → `_`, leading dots removed);
+zip timestamps are the pack's `createdAt`, so the same pack yields the same bytes.

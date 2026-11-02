@@ -101,7 +101,8 @@ function renderPart(part: Part): string {
   }
 }
 
-function renderTurn(turn: Turn): string {
+/** One turn as the envelope renders it: `[t005 · user]` header, then its parts. */
+export function renderTurn(turn: Turn): string {
   return [`[${turn.id} · ${turn.role}]`, ...turn.parts.map(renderPart)].join("\n");
 }
 
