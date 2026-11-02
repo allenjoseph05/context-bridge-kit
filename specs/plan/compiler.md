@@ -60,8 +60,8 @@ try its compact form; otherwise add a manifest entry with a pull hint (when `can
 
 Unselected turns go to the manifest with `why: "excluded_by_user"`; ungrounded items with
 `why: "ungrounded"` unless the user kept them.
-If step 2 alone exceeds the budget, return error `over_budget_orientation` (the UI offers a larger
-budget or verbatim mode).
+If steps 1–2 alone exceed the budget, return error `over_budget` with `needed` and `budget` (the UI
+offers a larger budget or verbatim mode).
 
 ## Verbatim mode
 No items. Push selected turns verbatim, newest first, until the budget is full; the rest go to the

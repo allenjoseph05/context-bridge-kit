@@ -54,11 +54,17 @@ change no state.
 - `committed { packId, route, deliverable }` where `deliverable` is one of
   `{ kind: "clipboard", text }`, `{ kind: "bundle", fileName, zipBase64 }`,
   `{ kind: "mcp", packId, instruction }` (the sentence the user types in the destination).
-- `error { requestId, code, message, recoverable: boolean, fallback?: "paste" | "verbatim" | "clipboard" }`
+- `error { requestId, code, message, recoverable: boolean, fallback?: "paste" | "verbatim" | "clipboard", needed?: number, budget?: number }`
+  `needed` and `budget` are set only with `code: "over_budget"`.
 
 ## Error codes
 `invalid_message`, `unknown_session`, `capture_empty`, `file_refused`, `model_unavailable`,
-`model_invalid_output`, `over_budget_orientation`, `hash_mismatch`, `vault_error`, `internal`.
+`model_invalid_output`, `over_budget`, `hash_mismatch`, `vault_error`, `internal`.
+
+`over_budget` (both modes): the smallest pack the compiler can build is larger than the budget —
+in condensed mode the header, orientation items and manifest; in verbatim mode the header and
+manifest with no turn pushed. `needed` is that pack's token count; `budget` the effective budget.
+Recoverable: the UI offers a larger budget, a smaller selection, or (condensed) verbatim mode.
 
 ## Hash binding (AC-15)
 `hash = sha256(envelope + "\n" + JSON.stringify(images.map(i => i.attachmentId)))`, lowercase hex.

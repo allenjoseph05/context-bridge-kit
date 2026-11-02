@@ -20,7 +20,8 @@ token, nothing important unreachable, different amounts of context for different
   compact forms; manifest ranges; pull hints when `canPull`.
 - `compile()` condensed mode for `continue` and `second_opinion` (extractive rendering by evidence;
   blind rule); `rescue` stays verbatim unless the user picks condensed.
-- `over_budget_orientation` error.
+- `over_budget` error (with `needed` and `budget`) when the orientation does not fit; the code already
+  exists from T05 (verbatim mode).
 - Host: `compile` with `mode: "condensed"` → `extractItems` with `progress` messages →
   `compile`; on `model_unavailable` or failed chunks → verbatim for the affected turns + notice
   (AC-14). `revise` recompiles without new model calls (items cached in the session).
@@ -42,7 +43,7 @@ inputs (no model) for compiler tests and `FakeProvider` for host tests.
 | 7 | `rescue` makes no provider call by default | `packages/host/test/compile.test.ts › AC-13 rescue no model` |
 | 8 | Provider down → verbatim pack with notice "Model unavailable: verbatim pack" | `compile.test.ts › AC-14 fallback` |
 | 9 | One failed chunk → its turns verbatim, others condensed, notice names the turn range | `compile.test.ts › AC-14 partial fallback visible` |
-| 10 | Orientation larger than the budget → `over_budget_orientation` | `priority.test.ts › T19 orientation over budget` |
+| 10 | Orientation larger than the budget → `over_budget` with `needed` > `budget` | `priority.test.ts › T19 orientation over budget` |
 | 11 | Pull hints present only for the MCP route | `priority.test.ts › T19 pull hints` |
 
 ## Gate G4 (run `gate-check` after this task)

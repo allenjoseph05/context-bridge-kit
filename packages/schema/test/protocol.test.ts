@@ -9,7 +9,7 @@ const ERROR_CODES = [
   "file_refused",
   "model_unavailable",
   "model_invalid_output",
-  "over_budget_orientation",
+  "over_budget",
   "hash_mismatch",
   "vault_error",
   "internal",

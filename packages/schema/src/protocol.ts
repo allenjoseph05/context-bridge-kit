@@ -30,7 +30,7 @@ export const ErrorCode = z.enum([
   "file_refused",
   "model_unavailable",
   "model_invalid_output",
-  "over_budget_orientation",
+  "over_budget",
   "hash_mismatch",
   "vault_error",
   "internal",
@@ -160,6 +160,9 @@ export const ErrorMsg = req("error").extend({
   message: z.string(),
   recoverable: z.boolean(),
   fallback: z.enum(["paste", "verbatim", "clipboard"]).optional(),
+  /** `over_budget` only: tokens the smallest possible pack needs, and the budget it missed. */
+  needed: z.number().int().nonnegative().optional(),
+  budget: z.number().int().nonnegative().optional(),
 });
 
 /** Transport-level slice of a host → extension message over 900,000 bytes. */
