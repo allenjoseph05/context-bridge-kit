@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { canonicalJson, sha256Hex, sha256HexWeb } from "../src/index.js";
+import { canonicalJson, sha256HexWeb } from "../src/index.js";
+import { sha256Hex } from "../src/node.js";
 
 describe("@cb/schema hash", () => {
   it("T01 canonical hashing", async () => {

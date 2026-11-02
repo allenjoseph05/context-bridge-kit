@@ -1,5 +1,5 @@
-// Canonical JSON and SHA-256 (Node and WebCrypto variants).
-import { createHash } from "node:crypto";
+// Canonical JSON and SHA-256 (WebCrypto). Browser-safe: no node: imports here; the sync
+// node:crypto variant lives in ./node.ts (subpath @cb/schema/node).
 
 /**
  * JSON with object keys sorted (recursively) and no whitespace. Arrays keep their order.
@@ -28,12 +28,10 @@ function hex(bytes: Uint8Array): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-/** Lowercase hex SHA-256 using node:crypto. Strings are hashed as UTF-8. */
-export function sha256Hex(data: string | Uint8Array): string {
-  return createHash("sha256").update(toBytes(data)).digest("hex");
-}
-
-/** Lowercase hex SHA-256 using WebCrypto (for the extension). Same output as `sha256Hex`. */
+/**
+ * Lowercase hex SHA-256 using WebCrypto (browsers and Node 20+). Strings are hashed as UTF-8.
+ * Same output as `sha256Hex` from `@cb/schema/node`.
+ */
 export async function sha256HexWeb(data: string | Uint8Array): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", toBytes(data));
   return hex(new Uint8Array(digest));

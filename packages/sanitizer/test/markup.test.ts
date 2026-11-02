@@ -1,6 +1,7 @@
 // T03 row 3: markup remnants (sanitizer.md §Steps 2). Synthetic text only.
 import { describe, expect, it } from "vitest";
-import { canonicalJson, sha256Hex, type Transcript } from "@cb/schema";
+import { canonicalJson, type Transcript } from "@cb/schema";
+import { sha256Hex } from "@cb/schema/node";
 import { createContext, sanitizeText, sanitizeTranscript } from "../src/index.js";
 
 const WITH_MARKUP =

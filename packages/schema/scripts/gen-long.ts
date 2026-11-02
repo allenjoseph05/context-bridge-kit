@@ -5,12 +5,12 @@ import { writeFileSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   canonicalJson,
-  sha256Hex,
   turnId,
   Transcript,
   type Part,
   type Turn,
 } from "../src/index.js";
+import { sha256Hex } from "../src/node.js";
 
 const TURNS = 60;
 const CODE_TURNS: ReadonlySet<number> = new Set([10, 30, 55]);

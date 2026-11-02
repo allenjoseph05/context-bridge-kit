@@ -2,7 +2,8 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { canonicalJson, sha256Hex, Transcript } from "@cb/schema";
+import { canonicalJson, Transcript } from "@cb/schema";
+import { sha256Hex } from "@cb/schema/node";
 import { createContext, sanitizeTranscript } from "../src/index.js";
 
 const DIR = fileURLToPath(new URL("../../schema/test-fixtures/", import.meta.url));

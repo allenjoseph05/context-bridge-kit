@@ -40,6 +40,9 @@ docs/design/            background research; read only when a task card points t
 - **Never invent DOM selectors.** Adapters are written only against saved fixture HTML in
   `packages/adapters/fixtures/`. No fixture → stop and ask.
 - **Never send content to a non-loopback address.** The only outbound call is the local model.
+- **Browser-safe packages import no `node:` module.** `@cb/schema` (main entry), `@cb/adapters` and
+  `@cb/sanitizer` run in the extension: hash with async `sha256HexWeb`. Node-only helpers (sync
+  `sha256Hex`) live in `@cb/schema/node`, for host, tests and scripts only. Purity tests enforce this.
 - **Code, tables and math are copied by code, never retyped by a model.**
 - **Do not modify test files to make them pass.** A test is part of the spec. If a test looks
   wrong, stop and say why; the human decides.

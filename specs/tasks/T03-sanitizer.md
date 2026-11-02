@@ -66,7 +66,8 @@ Report the case; do not loosen a rule silently.
 - Placeholder numbers are per kind per context; `unredact` replaces exact `[KIND_n]` strings only.
 - Seed fixtures: only small-chat t007 changes; injection t003 gets one flag; long-chat (60 turns) is
   unchanged with no flags.
-- No `node:` imports in src (purity test). `@cb/schema`'s index still loads `node:crypto` through
-  `hash.ts`; bundling for the extension (T08) must handle that, as for `@cb/adapters`.
+- No `node:` imports in src (purity test). Resolved after T03 (`fix(schema): browser-safe hashing`):
+  `@cb/schema`'s main entry no longer reaches `node:crypto`; sync `sha256Hex` moved to `@cb/schema/node`.
+  The T08 bundling concern is gone.
 - Test review changes (tool_output keeps markup, `\r` normalised, quoted/indented role flags, entropy needs
   a digit or `+/=`): see decisions.md 2026-11-02 · T03.

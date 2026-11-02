@@ -150,7 +150,8 @@ describe("parsePaste", () => {
   });
 
   it("T02 turn hashes are sha256 of canonical parts", async () => {
-    const { canonicalJson, sha256Hex } = await import("@cb/schema");
+    const { canonicalJson } = await import("@cb/schema");
+    const { sha256Hex } = await import("@cb/schema/node");
     const t = await parseOk("User: a\nAssistant: b");
     for (const turn of t.turns) expect(turn.sha256).toBe(sha256Hex(canonicalJson(turn.parts)));
   });
