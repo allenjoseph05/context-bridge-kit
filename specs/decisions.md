@@ -20,3 +20,4 @@ See `docs/design/technical-design.md` §Key decisions (D1–D16) for the full re
 
 ## Log
 <!-- YYYY-MM-DD · Txx · decision · why · alternatives -->
+- 2026-11-02 · T00 · Dev tooling pinned to vitest 3.2.x and TypeScript 6.0.x (with eslint 10, typescript-eslint 8, prettier 3). · vitest ≥4 removed `vitest.workspace.ts` (the card's deliverable) and vitest 5 does not support Node 20; typescript-eslint 8 supports TypeScript <6.1 only. · vitest 5 with `test.projects`; TypeScript 5.x or 7.x. Chosen by the human.

@@ -8,7 +8,7 @@ Status: `todo` · `in_progress` · `review` (tests or code waiting for the human
 
 | ID | Task | Depends on | Size | Test review | Gate | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| T00 | Scaffold the monorepo | — | S | — | | todo |
+| T00 | Scaffold the monorepo | — | S | — | | in_progress |
 | T01 | Schemas and IDs (`@cb/schema`) | T00 | M | — | | todo |
 | T02 | Paste parser and seed fixtures | T01 | S | — | | todo |
 | T03 | Sanitiser (`@cb/sanitizer`) | T01, T02 | M | required | | todo |

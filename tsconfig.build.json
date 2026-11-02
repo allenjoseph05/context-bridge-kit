@@ -1,0 +1,17 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/schema" },
+    { "path": "packages/sanitizer" },
+    { "path": "packages/tokens" },
+    { "path": "packages/compiler" },
+    { "path": "packages/extractor" },
+    { "path": "packages/attachments" },
+    { "path": "packages/index" },
+    { "path": "packages/vault" },
+    { "path": "packages/host" },
+    { "path": "packages/mcp-server" },
+    { "path": "packages/adapters" },
+    { "path": "packages/extension" }
+  ]
+}

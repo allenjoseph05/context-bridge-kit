@@ -1,0 +1,7 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+*.pem
+.env*
+evals/results/*.tmp
