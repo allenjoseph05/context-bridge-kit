@@ -11,8 +11,9 @@ import { ALL_IDS, destination, input, LONG } from "./helpers.js";
 const RUNS = 100;
 
 /**
- * Check one compile. On over_budget, prove it genuine: at budget `needed` the compile succeeds
- * with nothing pushed and its envelope has exactly `needed` tokens; at `needed - 1` it fails.
+ * Check one compile. On over_budget, prove it genuine: `needed` is the smallest pack compile can
+ * build (decisions.md 2026-11-03): at budget `needed` it succeeds with exactly `needed` tokens;
+ * at `needed - 1` it fails.
  */
 async function checkOne(over: Partial<CompileInput>, budget: number): Promise<boolean> {
   const result = await compile(input({ ...over, destination: destination(budget) }));
@@ -26,10 +27,7 @@ async function checkOne(over: Partial<CompileInput>, budget: number): Promise<bo
       input({ ...over, destination: destination(result.error.needed) }),
     );
     expect(minimal.ok).toBe(true);
-    if (minimal.ok) {
-      expect(minimal.pack.push.recentTurns).toEqual([]);
-      expect(countTokens(minimal.envelope)).toBe(result.error.needed);
-    }
+    if (minimal.ok) expect(countTokens(minimal.envelope)).toBe(result.error.needed);
     const below = await compile(
       input({ ...over, destination: destination(result.error.needed - 1) }),
     );

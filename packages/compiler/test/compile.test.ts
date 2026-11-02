@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { compile, NotImplementedError } from "../src/compile.js";
 import type { CompileInput } from "../src/compile.js";
 import { checkCoverage } from "../src/coverage.js";
-import { renderEnvelope } from "../src/envelope.js";
+import { renderEnvelope, renderTurn } from "../src/envelope.js";
 import {
   ALL_IDS,
   destination,
@@ -27,6 +27,20 @@ async function ok(
   const result = await compile(input(over));
   if (!result.ok) throw new Error(`compile failed: ${JSON.stringify(result.error)}`);
   return { pack: result.pack, envelope: result.envelope };
+}
+
+/** Smallest pack compile can build for this input (over_budget `needed` at budget 1). */
+async function minimalBudget(over: Partial<CompileInput>): Promise<number> {
+  const result = await compile(input({ ...over, destination: destination(1) }));
+  if (result.ok) throw new Error("expected over_budget at budget 1");
+  return result.error.needed;
+}
+
+/** Sum of the rendered tokens of the given turns of long-chat.json. */
+function turnsTokens(ids: readonly string[]): number {
+  return LONG.turns
+    .filter((t) => ids.includes(t.id))
+    .reduce((sum, t) => sum + countTokens(renderTurn(t)), 0);
 }
 
 function artifactContent(part: Part): string | undefined {
@@ -220,8 +234,11 @@ describe("compile (verbatim)", () => {
   });
 
   it("T05 recency order", async () => {
-    const selection = ALL_IDS.filter((_, i) => i % 3 === 0);
-    const { pack } = await ok({ selection, destination: destination(600) });
+    // Budget derived from the input: the smallest pack plus about half the block's
+    // tokens, so some turns are pushed and some are cut.
+    const selection = ALL_IDS.slice(30); // t031–t060
+    const budget = (await minimalBudget({ selection })) + Math.floor(turnsTokens(selection) / 2);
+    const { pack } = await ok({ selection, destination: destination(budget) });
     const pushed = pack.push.recentTurns.map((t) => t.id);
     expect(pushed.length).toBeGreaterThan(0);
     expect(pushed.length).toBeLessThan(selection.length);
@@ -238,17 +255,21 @@ describe("compile (verbatim)", () => {
   });
 
   it("T05 forced turns dropped last, never silently", async () => {
-    // A forced old turn survives cuts that remove newer unforced turns.
-    const forced = await ok({ forcedPush: ["t001"], destination: destination(600) });
+    // A forced old turn survives cuts that remove newer unforced turns. Budget derived from the
+    // input: the smallest pack plus about half of all turns' tokens.
+    const forcedBudget =
+      (await minimalBudget({ forcedPush: ["t001"] })) + Math.floor(turnsTokens(ALL_IDS) / 2);
+    const forced = await ok({ forcedPush: ["t001"], destination: destination(forcedBudget) });
     const pushed = forced.pack.push.recentTurns.map((t) => t.id);
     expect(pushed).toContain("t001");
     expect(pushed).not.toContain("t002");
     expect(pushed.at(-1)).toBe("t001"); // still newest first
     expect(forced.pack.notices).toEqual([]);
 
-    // A forced turn that cannot fit goes to the manifest as "budget", with a notice.
-    const base = await ok({ selection: [], destination: destination(20000) });
-    const budget = base.pack.stats.pushedTokens + 40;
+    // A forced turn that cannot fit goes to the manifest as "budget", with a notice. Budget
+    // derived from the same input: the smallest pack (nothing pushed, notice included) + 10 tokens;
+    // t010 (text + code) is far larger than 10 tokens.
+    const budget = (await minimalBudget({ selection: ["t010"], forcedPush: ["t010"] })) + 10;
     const tight = await ok({
       selection: ["t010"],
       forcedPush: ["t010"],
