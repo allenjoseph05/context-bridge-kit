@@ -12,6 +12,7 @@
     { "path": "../sanitizer" },
     { "path": "../tokens" },
     { "path": "../compiler" },
-    { "path": "../vault" }
+    { "path": "../vault" },
+    { "path": "../index" }
   ]
 }

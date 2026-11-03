@@ -1,5 +1,5 @@
 // @cb/compiler — public API.
-export { newFence, renderEnvelope } from "./envelope.js";
+export { newFence, renderEnvelope, renderTurn } from "./envelope.js";
 export type { FenceRng } from "./envelope.js";
 export { compile, NotImplementedError } from "./compile.js";
 export type { CompileError, CompileInput, CompileResult } from "./compile.js";

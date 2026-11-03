@@ -41,6 +41,8 @@ export const Attachment = z.object({
   reason: z.string().optional(),
   extractRef: z.string().optional(),
   summary: z.string().optional(),
+  /** PDF: character start of each page in the sanitised extracted text (T11 decision). */
+  pageOffsets: z.array(z.number().int().nonnegative()).optional(),
   flags: z.array(z.enum(["scanned_pdf", "possible_instruction", "metadata_stripped"])),
 });
 export type Attachment = z.infer<typeof Attachment>;

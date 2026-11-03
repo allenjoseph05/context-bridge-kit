@@ -2,12 +2,15 @@
 // Sessions live in memory only; redaction values never leave the session's SanitizeContext.
 import { readFileSync } from "node:fs";
 import { buildBundle, compile, newFence } from "@cb/compiler";
+import { buildIndex, docsFromTranscript } from "@cb/index";
 import {
   canonicalJson,
   ExtToHost,
   newPackId,
   newPreviewId,
   newSessionId,
+  TURN_RANGE,
+  ATTACHMENT_ID,
 } from "@cb/schema";
 import type {
   ContextPack,
@@ -97,6 +100,46 @@ function isNotable(turn: Turn): boolean {
  * host.md §Suggested selection: the last 10 turns plus any earlier turn with a code part, a table,
  * an attachment, or a number with a unit. Turn ids in transcript order.
  */
+/** Manifest reasons that mean "deliberately left out": never stored, never pullable. */
+const WITHHELD = new Set(["excluded_by_user", "profile"]);
+
+/**
+ * The transcript the vault may hold for `pack` (host.md §Pipeline, approve): without turns the
+ * manifest marks `excluded_by_user` or `profile` (ranges expanded in transcript order), and without
+ * attachments the user excluded or whose turn was dropped. `droppedShas` are the shas of dropped
+ * attachments that no kept attachment shares.
+ */
+export function shareableTranscript(
+  transcript: Transcript,
+  pack: ContextPack,
+): { transcript: Transcript; droppedShas: string[] } {
+  const position = new Map(transcript.turns.map((t, i) => [t.id, i]));
+  const droppedTurns = new Set<string>();
+  const droppedAttachments = new Set<string>();
+  for (const m of pack.push.manifest) {
+    if (m.why === "excluded_by_user" && ATTACHMENT_ID.test(m.ref)) droppedAttachments.add(m.ref);
+    if (!WITHHELD.has(m.why)) continue;
+    const [first, last] = TURN_RANGE.test(m.ref) ? m.ref.split("-") : [m.ref, m.ref];
+    const from = position.get(first ?? "");
+    const to = position.get(last ?? "");
+    if (from === undefined || to === undefined) continue; // attachment or item refs
+    for (let i = from; i <= to; i++) droppedTurns.add(transcript.turns[i]!.id);
+  }
+  const dropped = (a: Transcript["attachments"][number]): boolean =>
+    droppedAttachments.has(a.id) || droppedTurns.has(a.turnId);
+  const kept = transcript.attachments.filter((a) => !dropped(a));
+  const keptShas = new Set(kept.flatMap((a) => (a.sha256 ? [a.sha256] : [])));
+  const droppedShas = [
+    ...new Set(
+      transcript.attachments.filter(dropped).flatMap((a) => (a.sha256 && !keptShas.has(a.sha256) ? [a.sha256] : [])),
+    ),
+  ];
+  return {
+    transcript: { ...transcript, turns: transcript.turns.filter((t) => !droppedTurns.has(t.id)), attachments: kept },
+    droppedShas,
+  };
+}
+
 export function suggestSelection(transcript: Transcript): string[] {
   const firstRecent = transcript.turns.length - RECENT_TURNS;
   return transcript.turns.filter((t, i) => i >= firstRecent || isNotable(t)).map((t) => t.id);
@@ -344,15 +387,25 @@ export function createHost(options: HostOptions): Host {
 
   function approve(s: Session, previewId: string, hash: string): Reply<"committed"> {
     const p = currentPreview(s, previewId, hash);
-    const { pack, envelope, transcript } = p;
+    const { pack, envelope } = p;
+    const { transcript, droppedShas } = shareableTranscript(p.transcript, pack);
     let written;
     try {
-      written = vault.writePack(pack, envelope, transcript, {}); // index arrives in T11
+      // The index covers the shareable transcript and the extracted text of its attachments.
+      const extracted = new Map<string, string>();
+      for (const a of transcript.attachments) {
+        if (a.sha256 === undefined || a.status !== "extracted") continue;
+        const t = vault.getText(a.sha256);
+        if (t.ok) extracted.set(a.id, t.value);
+      }
+      written = vault.writePack(pack, envelope, transcript, buildIndex(docsFromTranscript(transcript, extracted)));
     } catch (e) {
       console.error("vault write failed:", e instanceof Error ? e.message : e);
       throw new HostError("vault_error", "could not write the pack to the vault");
     }
     if (!written.ok) throw new HostError("vault_error", `could not write the pack (${written.error.code})`);
+    // Bytes of deliberately excluded attachments go now, unless another stored pack uses them.
+    for (const sha of droppedShas) vaultCall(() => vault.releaseFile(sha));
     s.last = undefined; // a preview is approved once
     const route = p.params.route;
     vault.audit({ event: "approved", sessionId: s.id, packId: pack.id, route, sha256: hash });

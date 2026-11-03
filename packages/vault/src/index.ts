@@ -106,6 +106,11 @@ export type Vault = {
   /** Unexpired packs, newest first. */
   listPacks(): PackMeta[];
   deletePack(id: string): VaultResult<void>;
+  /**
+   * Delete `files/<sha>` and `files/<sha>.txt` unless a stored pack references the sha. Returns
+   * the number of entries removed (0 when still referenced or absent).
+   */
+  releaseFile(sha: string): VaultResult<number>;
   sweepExpired(): SweepReport;
   putFile(bytes: Uint8Array): string;
   getFile(sha: string): VaultResult<Uint8Array>;
@@ -335,6 +340,19 @@ export function openVault(options: VaultOptions = {}): Vault {
       const files = removePack(id);
       audit({ event: "deleted", packId: id, counts: { files } });
       return ok(undefined);
+    },
+
+    releaseFile(sha) {
+      if (!SHA256_HEX.test(sha)) return fail("invalid_id");
+      for (const p of storedPacks()) if (fileRefs(p.id).has(sha)) return ok(0);
+      let removed = 0;
+      for (const path of [paths.file(sha), paths.text(sha)]) {
+        if (remove(path)) {
+          removed++;
+          audit({ event: "deleted", sha256: sha });
+        }
+      }
+      return ok(removed);
     },
 
     sweepExpired() {
