@@ -58,8 +58,29 @@ version; record what you observed in `decisions.md`.
   implementation notes.
 
 ## Done when
-- [ ] Tests pass; `pnpm check` green; manual criterion 6 recorded
-- [ ] Extension ID recorded in `decisions.md`
-- [ ] `finish-task` run
+- [x] Tests pass; `pnpm check` green; manual criterion 6 recorded
+- [x] Extension ID recorded in `decisions.md`
+- [x] `finish-task` run
 
 ## Implementation notes
+- Built: `packages/extension` — `manifest.json` (fixed `key`; ID `jmjcgjnadojagipfhicelhjmeipkggki`), `build.ts`
+  (esbuild → `dist/`: `sw.js`, `panel.js`, `panel.html`, `panel.css`, generated icons; `content/*.ts` bundled as IIFE
+  once they exist), `src/native.ts`, `src/sw.ts`, `src/panel/{Panel.tsx,index.tsx,panel.html,panel.css}`;
+  `scripts/gen-extension-key.ts` (`pnpm gen:key`, reuses `key.pem` unless `--force`).
+- Deviation (human): the **panel** opens the native port (`chromeNativeClient()` in native.ts); the SW only sets
+  `openPanelOnActionClick`. Chunking moved to `@cb/schema` (`splitIntoChunks`, `reassemble`); host wraps it.
+- `HostClient.request(body, { onProgress, signal })` resolves a typed `RequestResult` (never rejects): failures
+  `timeout | disconnected | cancelled | invalid_reply`; `error` replies arrive as `ok: true` with `reply.type "error"`.
+  Timeout 180 s since the last message; lazy reconnect; `onDisconnect(listener)` for the UI.
+- `Panel` takes `{ client }`; T09 replaces `ReviewScreen` (placeholder: raw envelope in `<pre data-testid="envelope">`).
+  Select defaults: suggested profile and ticks, route clipboard, mode verbatim; meter "approx." = per-part tokens.
+- Tooling: the extension is outside root `tsconfig.json`/`tsconfig.build.json` (own tsconfig with DOM, JSX, chrome
+  types); root `build`/`typecheck` chain its scripts. Panel tests use `// @vitest-environment jsdom`.
+- Bundle size: `panel.js` 2,367.7 KiB minified (almost all js-tiktoken o200k ranks); `dist` total 2,371.6 KiB.
+- Manual criterion 6 (human, Chrome 156.0.8078.47, Windows 11 25H2): loaded unpacked, install-host.ps1 OK, panel
+  opened on icon click, host connected; small-chat paste → 8 turns, 2 flags, 2 redactions, meter "approx. 234 / 6800";
+  Prepare → Review with a 450-token envelope, 0 cut, `[SECRET_1]` and `[EMAIL_1]` shown.
+- Fixes from that run: manifest `version`/`description` added (spec bug); verbatim envelope omits `## Artifacts`;
+  recent turns render oldest first; `hostVersion` from host package.json (0.1.0). Double Review block not reproduced.
+- Gotcha: `parsePaste` needs WebCrypto (`crypto.subtle`); "Use pasted text" double click can send two ingests (the
+  second supersedes the first; harmless, but T09 may want to disable the button before parsing).
