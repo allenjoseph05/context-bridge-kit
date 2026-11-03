@@ -53,7 +53,25 @@ Encryption (designed, not built). Index format (T10 defines it; store it as opaq
 Windows permission semantics block a test; document and skip that assertion on Windows only.
 
 ## Done when
-- [ ] Tests pass; `pnpm check` green
-- [ ] `finish-task` run
+- [x] Tests pass; `pnpm check` green
+- [x] `finish-task` run
 
 ## Implementation notes
+- `packages/vault/src/index.ts`: `openVault({ root?, now? }) → Vault` (sync `node:fs`; Node only, never
+  bundle into the extension). Also exports `VaultResult`, `VaultErrorCode`, `AuditInput`, `AuditEvent`,
+  `AuditEventName` (zod enum), `VaultConfig`, `SweepReport`, `VaultOptions`.
+- Reads/deletes/id-keyed writes return `{ ok, value } | { ok: false, error: { code } }` with
+  `not_found | invalid_id | invalid`; ids/shas/cache keys are regex-checked before any path is built.
+- `writePack` writes transcript, index, envelope, then the pack file last (so `listPacks` never sees a
+  half-written pack). Every write: temp file `<target>.<hex>.tmp` + fsync + rename; temp removed on failure.
+- `listPacks` filters expired packs but does not delete; the host (T07) must call `sweepExpired()` on
+  start and on `list_packs`. `deletePack`/sweep audit `deleted`/`expired` with `counts.files`.
+- File refs = `attachment.sha256` in the stored transcript. `putFile`, `putText`, `cachePut` set mtime
+  from the injected clock; orphans > 24 h and cache entries > `expiryDays` are removed by `sweepExpired`.
+- `audit()` throws (zod strict) on unknown fields or free-text values: `tool` must be `[a-z_]+`, count
+  keys `[A-Za-z]+`, ids must match their regexes. Host/MCP callers should pass literals only.
+- `readConfig()` returns `{ defaults: { expiryDays: 7 } }` when `config.json` is absent or invalid.
+- Windows: mode bits are set but not enforced; `S15 permissions` is skipped on win32 and has **not yet
+  run on POSIX** (WSL here has no Node). Run it on Linux/macOS before G1.
+- Test-only `_testHooks.beforeRename` (undocumented). Vault tests import `@cb/compiler` etc. via `dist`:
+  run `pnpm build` first if those packages changed.
