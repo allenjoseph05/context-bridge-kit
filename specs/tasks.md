@@ -19,7 +19,7 @@ Status: `todo` · `in_progress` · `review` (tests or code waiting for the human
 | T08 | Extension shell: manifest, port, Capture and Select | T07 | L | — | | done |
 | T09 | Review and Deliver; clipboard and bundle routes | T08 | M | — | **G1** | done |
 | T09b | Investigate a one-off test-suite failure | T09 | S | — | | done |
-| T10 | BM25 retrieval index (`@cb/index`) | T01 | S | — | | in_progress |
+| T10 | BM25 retrieval index (`@cb/index`) | T01 | S | — | | done |
 | T11 | MCP server, five read-only tools | T07, T10 | M | required | **G2** | todo |
 | T12 | Adapter interface, generic adapter, injection | T08 | M | — | | todo |
 | T13 | Gemini adapter | T12 | M | — | | todo |
