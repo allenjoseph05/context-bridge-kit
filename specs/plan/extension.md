@@ -29,10 +29,10 @@ Chrome MV3. Captures on click, shows the UI, holds no secrets and no files at re
 ## Files
 | File | Role |
 | --- | --- |
-| `sw.ts` | Service worker: opens the side panel on action click, context menu, injects adapters with `chrome.scripting.executeScript`, owns the native port, reassembles chunks. Stateless beyond the open port. |
+| `sw.ts` | Service worker: opens the side panel on action click, context menu, injects adapters with `chrome.scripting.executeScript`. Stateless; it does not touch the native port. |
 | `content/*.ts` | One bundle per adapter, built from `@cb/adapters`. |
-| `panel/*` | Preact side panel UI. |
-| `native.ts` | Port wrapper: request/reply by `requestId`, chunk reassembly, timeouts, reconnect. |
+| `panel/*` | Preact side panel UI. Opens the native port (through `native.ts`); the host lives while the panel is open. |
+| `native.ts` | Port wrapper used by the panel: `runtime.connectNative`, request/reply by `requestId`, chunk reassembly (`@cb/schema` chunking, shared with the host), timeouts, reconnect, dropping replies to cancelled requests. |
 
 ## Side panel screens (state machine)
 ```
