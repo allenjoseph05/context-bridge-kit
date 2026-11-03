@@ -402,9 +402,9 @@ interface Spies {
 }
 
 function installSpies(): Spies {
-  const writeText = vi.fn((_text: string) => Promise.resolve());
-  const download = vi.fn((_opts: unknown) => Promise.resolve(1));
-  const createObjectURL = vi.fn((_b: Blob) => "blob:chrome-extension://test/1");
+  const writeText = vi.fn<(text: string) => Promise<void>>(() => Promise.resolve());
+  const download = vi.fn<(opts: unknown) => Promise<number>>(() => Promise.resolve(1));
+  const createObjectURL = vi.fn<(b: Blob) => string>(() => "blob:chrome-extension://test/1");
   Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
   (globalThis as unknown as { chrome: unknown }).chrome = { downloads: { download } };
   Object.defineProperty(URL, "createObjectURL", { value: createObjectURL, configurable: true });
