@@ -15,7 +15,7 @@ Status: `todo` · `in_progress` · `review` (tests or code waiting for the human
 | T04 | Token counting, budgets, envelope | T01 | S | — | | done |
 | T05 | Compiler, verbatim mode, coverage, bundle | T03, T04 | M | required | | done |
 | T06 | Vault, expiry, audit | T01, T03 | M | — | | done |
-| T07 | Bridge host: protocol, sessions, approval, install | T02, T05, T06 | L | required | | todo |
+| T07 | Bridge host: protocol, sessions, approval, install | T02, T05, T06 | L | required | | review |
 | T08 | Extension shell: manifest, port, Capture and Select | T07 | L | — | | todo |
 | T09 | Review and Deliver; clipboard and bundle routes | T08 | M | — | **G1** | todo |
 | T10 | BM25 retrieval index (`@cb/index`) | T01 | S | — | | todo |

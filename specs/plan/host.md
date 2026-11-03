@@ -9,9 +9,15 @@
 - **stdout carries the protocol only.** All logs go to stderr. ESLint `no-console` with
   `allow: ["error", "warn"]` in this package.
 - Opens no network port. The only outbound connection is the model provider (loopback).
+- Exits with code 0 when stdin closes (port disconnected); all sessions and their redaction values
+  are discarded with the process. An incoming frame whose declared length exceeds 64 MiB gets
+  `error invalid_message`; its bytes are skipped as they arrive, never buffered whole.
+- The install scripts write node's absolute path into the launcher (Chrome does not use the
+  shell's PATH).
 
 ## Pipeline per session (pure stages, wired in `session.ts`)
-1. `ingest` → validate (zod) → normalise ids → sanitise (`@cb/sanitizer`) → register attachments →
+1. `ingest` → validate (zod) → normalise ids → sanitise (`@cb/sanitizer`; always, with a fresh
+   per-session context, even if the extension already sanitised) → register attachments →
    reply with counts, flags, missing files, suggested profile (`continue`) and suggested selection.
 2. `add_file` → `@cb/attachments` → update attachment → reply.
 3. `compile` → if `mode = "condensed"` and the model is available: `@cb/extractor` with progress
