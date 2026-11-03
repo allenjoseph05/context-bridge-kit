@@ -56,8 +56,24 @@ Clipboard writes from the side panel are blocked in your Chrome version; propose
 (a "Copy" button the user clicks, which is a user gesture).
 
 ## Done when
-- [ ] Tests pass; `pnpm check` green
+- [x] Tests pass; `pnpm check` green
 - [ ] G1 passed and recorded
-- [ ] `finish-task` run
+- [x] `finish-task` run
 
 ## Implementation notes
+- Built: host `revise` handles all four edit kinds; `unredact` replaces the T07 stub. `CompileParams.revealed` is cumulative and
+  unknown placeholders are ignored. `revealTranscript` (session.ts) restores values in text/table/code/tool_output parts and
+  recomputes turn hashes. Revealed redactions get `revealed: true` and their `redacted` flags are dropped from `preview.flags`.
+  `Preview.transcript` (the revealed copy) is what approve stores.
+- Panel: `ReviewScreen` (h1 "Review", `data-testid="review-stats"`, envelope via exported `markEnvelope(envelope, flags)` →
+  `<mark data-kind>` text segments, Reveal → inline `role="alertdialog"` confirm, Remove tNNN / Include tNNN, destination +
+  data note, Approve). `DeliverScreen` (clipboard auto-copy after `committed`, else a Copy button; Open Gemini/Claude/ChatGPT
+  links; bundle Blob → `chrome.downloads.download`, URL revoked after 60 s; MCP instruction + Copy; Delete this pack; New transfer).
+- A failed revise or approve returns to Select with the error (preview cleared). Revise/approve are ignored while another op
+  is in flight (a synthetic click on the disabled Approve still reached the handler in jsdom).
+- Human request: the Review header/stats render once; test `T09 review renders its header once`. The doubled block from the
+  manual run was not reproduced in code (one render, one #app); recheck during G1.
+- Tests edited after the test commit (by Claude, same session, before human review): revise pushed-token equality depended on
+  the random pack id (f4e3ce9); spy typing for lint (28fb376). One `pnpm check` run had 1 test file fail with no failing
+  test (not reproduced in 4 later runs; cause unknown).
+- Open: G1 manual run (human).
