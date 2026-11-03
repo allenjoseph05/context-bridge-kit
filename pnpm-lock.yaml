@@ -60,7 +60,27 @@ importers:
 
   packages/extractor: {}
 
-  packages/host: {}
+  packages/host:
+    dependencies:
+      '@cb/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@cb/sanitizer':
+        specifier: workspace:*
+        version: link:../sanitizer
+      '@cb/schema':
+        specifier: workspace:*
+        version: link:../schema
+      '@cb/tokens':
+        specifier: workspace:*
+        version: link:../tokens
+      '@cb/vault':
+        specifier: workspace:*
+        version: link:../vault
+    devDependencies:
+      fflate:
+        specifier: ^0.8.3
+        version: 0.8.3
 
   packages/index: {}
 

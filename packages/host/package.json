@@ -8,5 +8,18 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     }
+  },
+  "bin": {
+    "context-bridge-host": "./bin/context-bridge-host"
+  },
+  "dependencies": {
+    "@cb/compiler": "workspace:*",
+    "@cb/sanitizer": "workspace:*",
+    "@cb/schema": "workspace:*",
+    "@cb/tokens": "workspace:*",
+    "@cb/vault": "workspace:*"
+  },
+  "devDependencies": {
+    "fflate": "^0.8.3"
   }
 }
