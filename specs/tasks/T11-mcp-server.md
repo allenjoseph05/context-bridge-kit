@@ -71,7 +71,7 @@ record the version in `decisions.md`.
 
 ## Done when
 - [x] Test commit reviewed, then green; `pnpm check` green
-- [ ] G2 passed and recorded
+- [x] G2 passed and recorded
 - [x] `finish-task` run
 
 ## Implementation notes
@@ -93,4 +93,4 @@ record the version in `decisions.md`.
   (`as: "image"`): `get_pack` already returns those as image content from `files/<sha>`, and must
   replace the verbatim-mode `why: "profile"` attachment placeholder (see decisions).
 - Typecheck reads workspace types from `dist/`: run `pnpm build` before `pnpm check` after API changes.
-- G2 not yet run (needs the human, Claude Desktop): see `docs/mcp-setup.md`.
+- G2 passed 2026-11-03 (see tasks.md §Gates). On a Microsoft Store install of Claude Desktop, open the config with Settings → Developer → Edit Config (it is not under `%APPDATA%\Claude`); the Code tab in auto mode skips tool-approval prompts, so test consent in the Chat tab.
