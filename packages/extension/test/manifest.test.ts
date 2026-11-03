@@ -48,6 +48,15 @@ describe("manifest", () => {
     expect(icons).toBeTypeOf("object");
   });
 
+  it("S7 manifest minimal: has every field Chrome requires for MV3", () => {
+    // Checked on the build itself, so a typo in the spec cannot produce an unloadable extension.
+    expect(built.manifest_version).toBe(3);
+    expect(built.name).toBeTypeOf("string");
+    expect((built.name as string).trim()).not.toBe("");
+    expect(built.version).toBeTypeOf("string");
+    expect(built.version).toMatch(/^\d+(\.\d+){0,3}$/);
+  });
+
   it("S7 manifest minimal: every referenced file is in the build", () => {
     const icons = Object.values(built.icons as Record<string, string>);
     for (const f of ["sw.js", "panel.html", "panel.js", ...icons]) {

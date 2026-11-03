@@ -7,6 +7,8 @@ Chrome MV3. Captures on click, shows the UI, holds no secrets and no files at re
 {
   "manifest_version": 3,
   "name": "Context Bridge",
+  "version": "0.1.0",
+  "description": "Move selected AI chat context between assistants, locally and with your approval.",
   "key": "<public key from scripts/gen-extension-key>",
   "permissions": ["activeTab", "scripting", "sidePanel", "nativeMessaging",
                   "clipboardWrite", "downloads", "contextMenus"],

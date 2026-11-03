@@ -1,6 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Context Bridge",
+  "version": "0.1.0",
+  "description": "Move selected AI chat context between assistants, locally and with your approval.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0TmqW91KyHX9qUWzbXKuFl0AUZ3TRnXT1clp+kRfUxj1oewa8rEYQoWJv7GRj/1o9k6oS/TNLXc4aJtIWMMfiQ8ywONuLyen0ns6AyzJ8xaVfWukqnb4HgaapACT4NWBmvKXlybvYpl7ZbB395cfqvgaEPIgyNdl9ppmi28V6BuFedp9GcCdiUT9AoiF/hEA8GRzm+VngQzL1mFsk4Hh1qTgbAXpbo8jSgcqzhsNJUUxzQ1gE7/6sPmRKXjK2Efx38n8gCd1t0fNYOBlD94TLpezMGW15kUlQzdlGEIBQiElb2/Ws2Wgalr4tNr0AopD2zL0EkGjuWYfCv/7bd7CHwIDAQAB",
   "permissions": [
     "activeTab",
