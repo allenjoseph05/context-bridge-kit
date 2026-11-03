@@ -5,3 +5,4 @@ export * from "./items.js";
 export * from "./pack.js";
 export * from "./protocol.js";
 export * from "./hash.js";
+export * from "./chunking.js";

@@ -1,0 +1,16 @@
+:root { color-scheme: light dark; font: 13px/1.4 system-ui, sans-serif; }
+body { margin: 0; padding: 12px; }
+h1 { font-size: 16px; margin: 8px 0; }
+label { margin-right: 6px; }
+textarea { display: block; width: 100%; box-sizing: border-box; margin: 6px 0; font: 12px/1.4 ui-monospace, monospace; }
+button { margin: 4px 4px 4px 0; padding: 4px 10px; }
+button.primary { font-weight: 600; }
+.row { margin: 6px 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.error { border: 1px solid #c33; border-radius: 4px; padding: 6px 8px; margin-bottom: 8px; }
+.host, .note, .counts { opacity: 0.75; }
+.meter { font-weight: 600; }
+.turns { list-style: none; padding: 0; }
+.turns li { border-top: 1px solid #8884; padding: 6px 0; }
+.turn-id { font-weight: 600; }
+.turn-text { white-space: pre-wrap; word-break: break-word; opacity: 0.85; }
+.envelope { white-space: pre-wrap; word-break: break-word; max-height: 60vh; overflow: auto; border: 1px solid #8884; padding: 8px; font: 12px/1.4 ui-monospace, monospace; }
