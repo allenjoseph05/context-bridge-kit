@@ -64,8 +64,28 @@ Extension code (T08). Model calls (T17). Attachments (T15). Index content (T11).
 Chrome's documented manifest locations differ from what the skill lists for your OS.
 
 ## Done when
-- [ ] Test commit reviewed, then green; `pnpm check` green
-- [ ] Dry-run output recorded below
-- [ ] `finish-task` run
+- [x] Test commit reviewed, then green; `pnpm check` green
+- [x] Dry-run output recorded below (human confirmation of the manifest still pending)
+- [x] `finish-task` run
 
 ## Implementation notes
+- Built: `src/framing.ts` (`encode`, `createDecoder(onMessage, onError?)` with `buffered()`;
+  frames > `MAX_INCOMING_BYTES` (64 MiB) → `too_large`, skipped as they stream), `src/chunking.ts`
+  (`chunkMessage(msg) → HostToExt[]`, `reassemble(chunks)` typed result), `src/session.ts`
+  (`createHost({ vault, send, now? }) → { handle, close, sessionCount }`, `suggestSelection`,
+  `previewHash`), `src/main.ts` (`runHost({ args, stdin, stdout, vault? }) → exit code`; entry guard
+  runs it when started as a script). Launchers in `packages/host/bin/` are PATH fallbacks.
+- Install: `scripts/install-host.sh` (macOS/Linux) and `.ps1` (Windows) generate
+  `<vault>/host/context-bridge-host[.cmd]` with node's absolute path; manifest in Chrome's user dir
+  (Windows: `<vault>/host/com.contextbridge.host.json` + HKCU registry key); merge `extensionId`
+  into `<vault>/config.json`. Real install not run (it writes HKCU); T08 runs it with the real ID.
+- Deviations/additions (all in decisions.md): delete is idempotent; `requestId: "unknown"` for
+  unparseable input; approve consumes the preview; `ContextPack.redactions` is `PackRedaction`
+  (host fills it after compile, compile leaves `[]`); `revise` with `unredact` → invalid_message
+  until T09 (**T09 must implement reveal**: value allowed in approved envelope, pack marks `revealed`).
+- For T08: protocol replies may arrive as `chunk` messages (use the same logic as `reassemble`);
+  `hello_ok.model.available` is false until T17; condensed notice appears only in `preview.notices`.
+- Dry run (`CB_VAULT=<tmp> sh scripts/install-host.sh abcdefghijklmnopabcdefghijklmnop --dry-run`,
+  Git Bash on Windows, so Chrome dir shows "unsupported OS"; stdout):
+  `{"name":"com.contextbridge.host","description":"Context Bridge local host","path":"C:/Users/ALLENJ~1/AppData/Local/Temp/tmp.ed8l8z2l9U/host/context-bridge-host","type":"stdio","allowed_origins":["chrome-extension://abcdefghijklmnopabcdefghijklmnop/"]}`
+  `.ps1 --dry-run` gave the same with `"path": "C:\Users\…\cb-dry\host\context-bridge-host.cmd"`.
