@@ -11,6 +11,7 @@
     "evals/**/*.ts",
     "vitest.workspace.ts",
     "vitest.config.ts",
+    "vitest.shared.ts",
     "scripts/**/*.ts"
   ],
   "exclude": [

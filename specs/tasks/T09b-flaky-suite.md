@@ -60,3 +60,7 @@ Changing test timeouts globally without a measured cause.
 - `scripts/stress-tests.ps1 -Mode full|shuffle|check|revise|host|hanging -Runs N [-LogDir]` keeps
   logs + JUnit XML of failing runs and a summary.csv (default `%TEMP%\cb-stress`). No .sh twin.
 - `vitest.workspace.ts` kept (T00 decision); its deprecation notice is expected.
+- Follow-up (same day): the `dist/` lead is closed. Tests resolve workspace packages from `src/` via
+  a `"source"` export condition (vitest.shared.ts, vitest.workspace.ts, NODE_OPTIONS for spawned
+  processes, esbuild in the extension build); see decisions.md. A missing or stale `dist/` can no
+  longer fail or falsely pass `pnpm test`.

@@ -18,6 +18,9 @@ export interface BuildResult {
 
 const common: BuildOptions = {
   bundle: true,
+  // Bundle workspace packages from src/ ("source" export condition), so the extension build does
+  // not depend on their dist/ being built first or current.
+  conditions: ["source"],
   platform: "browser",
   target: "chrome120",
   jsx: "automatic",
