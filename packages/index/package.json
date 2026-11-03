@@ -9,5 +9,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     }
+  },
+  "dependencies": {
+    "@cb/tokens": "workspace:*"
+  },
+  "devDependencies": {
+    "@cb/schema": "workspace:*"
   }
 }

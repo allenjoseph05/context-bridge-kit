@@ -108,7 +108,15 @@ importers:
         specifier: ^0.8.3
         version: 0.8.3
 
-  packages/index: {}
+  packages/index:
+    dependencies:
+      '@cb/tokens':
+        specifier: workspace:*
+        version: link:../tokens
+    devDependencies:
+      '@cb/schema':
+        specifier: workspace:*
+        version: link:../schema
 
   packages/mcp-server: {}
 
