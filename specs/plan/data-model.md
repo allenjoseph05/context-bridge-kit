@@ -130,7 +130,9 @@ type ContextPack = {
     manifest: ManifestEntry[];
   };
   pull: { transcriptRef: string; indexRef: string };   // vault paths; never sent
-  redactions: Array<{ placeholder: string; kind: string }>;   // values never stored
+  redactions: Array<{ placeholder: string; kind: string; revealed?: true }>;
+                                      // never a value; revealed = the user chose to share it at
+                                      // review, so the value is in the envelope (AC-05)
   notices: string[];                  // e.g. "Model unavailable: verbatim pack"
   stats: { capturedTokens: number; pushedTokens: number; budget: number; cutCount: number };
 };

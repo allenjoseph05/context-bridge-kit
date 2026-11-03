@@ -47,6 +47,15 @@ export type PackStats = z.infer<typeof PackStats>;
 export const Redaction = z.object({ placeholder: z.string(), kind: z.string() });
 export type Redaction = z.infer<typeof Redaction>;
 
+/**
+ * A redaction listed in a stored pack. Strict: it can never carry the value. `revealed: true` means
+ * the user chose to share that value at review, so it appears in the approved envelope (AC-05).
+ */
+export const PackRedaction = z
+  .object({ placeholder: z.string(), kind: z.string(), revealed: z.literal(true).optional() })
+  .strict();
+export type PackRedaction = z.infer<typeof PackRedaction>;
+
 export const ContextPack = z.object({
   schema: z.literal("contextpack/0.2"),
   id: PackIdSchema,
@@ -83,7 +92,7 @@ export const ContextPack = z.object({
     manifest: z.array(ManifestEntry),
   }),
   pull: z.object({ transcriptRef: z.string(), indexRef: z.string() }),
-  redactions: z.array(Redaction),
+  redactions: z.array(PackRedaction),
   notices: z.array(z.string()),
   stats: PackStats,
 });

@@ -54,7 +54,10 @@ Each criterion becomes at least one test named with its ID.
 
 ### Processing (US-4, US-7)
 - **AC-05** Invisible and control characters are removed; secrets and personal data are replaced by
-  stable placeholders before any model call; original values are never written to disk.
+  stable placeholders before any model call; original values are never written to disk, except a
+  value the user explicitly reveals at review: revealing is the user's choice to share it, so it may
+  appear in the approved envelope and its stored copy (the pack marks that redaction `revealed`).
+  Values not revealed never reach disk.
 - **AC-06** Instruction-like text (addressed to an AI) is flagged, not deleted, and shown at review.
 - **AC-07** Files over 25 MB, more than 50 files, and archives are refused with a reason; image
   metadata is stripped; PDF text is extracted (scanned PDFs flagged); CSV files are summarised;
