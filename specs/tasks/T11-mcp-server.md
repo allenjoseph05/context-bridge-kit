@@ -70,8 +70,26 @@ The SDK version's API differs from the skill's examples; check the installed pac
 record the version in `decisions.md`.
 
 ## Done when
-- [ ] Test commit reviewed, then green; `pnpm check` green
+- [x] Test commit reviewed, then green; `pnpm check` green
 - [ ] G2 passed and recorded
-- [ ] `finish-task` run
+- [x] `finish-task` run
 
 ## Implementation notes
+
+- `packages/mcp-server/src/index.ts`: `createServer({ vault }) → McpServer` (tests connect it via the
+  SDK's `InMemoryTransport`); `main()` runs stdio when the file is the process entry (`dist/index.js`).
+  Also exports `capPage`, `noticeLine`, `MAX_RESPONSE_TOKENS`, `NOT_FOUND`. SDK 1.32.2, `registerTool`.
+- Result shape: block 1 = notice line, then the payload (envelope / page text / image). Pull pages end
+  `
+… [truncated; call again with offset=N]`, N absolute; `get_pack` is never cut.
+- Visibility = `vault.listPacks()` (committed, unexpired); the server never sweeps or writes, except audit.
+  Audit `served` counts: `chars`, `images`, `error` (0/1). SDK-rejected input writes no line (known limit).
+- Host `approve` (`session.ts`): `shareableTranscript(transcript, pack)` (exported) drops turns with
+  manifest why `excluded_by_user`/`profile` and their attachments; index = `buildIndex(docsFromTranscript(
+  shareable, extracted texts of status "extracted"))`; then `vault.releaseFile(sha)` per dropped sha.
+- New: `vault.releaseFile(sha)`, `Attachment.pageOffsets?`, `@cb/compiler` exports `renderTurn`.
+- T15 must set `pageOffsets` after sanitising; T16 must push images via `pack.push.attachments`
+  (`as: "image"`): `get_pack` already returns those as image content from `files/<sha>`, and must
+  replace the verbatim-mode `why: "profile"` attachment placeholder (see decisions).
+- Typecheck reads workspace types from `dist/`: run `pnpm build` before `pnpm check` after API changes.
+- G2 not yet run (needs the human, Claude Desktop): see `docs/mcp-setup.md`.
