@@ -24,8 +24,9 @@ prompt is a second, independent consent.
 - Response cap 4,000 tokens with the truncation suffix on the pull tools, each with optional `offset`; `get_pack` uncapped, bounded by the approved budget.
 - Notice line prepended to every tool result that carries pack content.
 - Audit `served` event per call.
-- Host change: on `approve`, build the BM25 index (`@cb/index`) and store it (replaces T07's
-  placeholder).
+- Host change: on `approve`, store the shareable transcript only (host.md §Pipeline: no turns
+  excluded by the user or withheld by the profile, no excluded attachments), build the BM25 index
+  (`@cb/index`) from it and store it (replaces T07's placeholder).
 - `packages/compiler/src/index.ts`: export `renderTurn` (get_turns renders with it).
 - `packages/schema/src/transcript.ts`: optional `Attachment.pageOffsets` (data-model.md).
 - README snippet `docs/mcp-setup.md`: the Claude Desktop config with the absolute path, how to
@@ -48,6 +49,9 @@ client transport and a temp vault seeded with packs.
 | 6b | Following the `offset` hints and concatenating the pages reproduces the full result exactly (`get_turns`, `get_attachment`) | `tools.test.ts › AC-18 offset pages concatenate` |
 | 7 | `get_attachment` on an image returns image content with mime; on a text document returns a text range; on a listed file returns an explanation (seed the vault with a small png and a txt) | `tools.test.ts › AC-19 attachments` |
 | 7b | `get_attachment` with `page` on a text with `pageOffsets` returns that page; an out-of-range page is an error naming the page count | `tools.test.ts › AC-19 attachment pages` |
+| 7c | An excluded turn's unique phrase is absent from `search_history`, `get_turns` refuses it with "not available: excluded by the user", and the phrase appears in no vault file; a budget-cut turn stays pullable | `exclusion.test.ts › T11 excluded turns are not pullable` |
+| 7d | In a blind second opinion, no assistant turn is pullable or searchable (AC-13) | `exclusion.test.ts › AC-13 blind withholds assistant turns from pull` |
+| 7e | The host's `approve` stores the shareable transcript and a BM25 index built from it | `packages/host/test/approve-index.test.ts › T11 approve stores shareable transcript and index` |
 | 8 | Every call adds one `served` audit line with no content | `tools.test.ts › AC-22 served audited` |
 | 9 | No tool name or description implies writing, deleting or network access | `tools.test.ts › S9 tool surface` |
 

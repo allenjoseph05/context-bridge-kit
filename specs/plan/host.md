@@ -23,7 +23,12 @@
 3. `compile` → if `mode = "condensed"` and the model is available: `@cb/extractor` with progress
    messages; otherwise verbatim with a notice → `@cb/compiler` → envelope → preview with hash.
 4. `revise` → recompile with the user's edits (no new model calls) → new preview.
-5. `approve` → check hash → write pack, transcript, index, audit → deliverable per route.
+5. `approve` → check hash → build the **shareable transcript** → write pack, shareable
+   transcript, BM25 index of the shareable transcript (`@cb/index`), audit → deliverable per route.
+   Shareable = the approved preview's transcript minus every turn whose manifest `why` is
+   `excluded_by_user` or `profile` (blind withholding; manifest ranges expanded), minus every
+   attachment whose manifest `why` is `excluded_by_user` or whose turn was dropped. Turns cut for
+   `budget` or `condensed` stay. Pull never reveals what the user deliberately left out.
 
 **Suggested selection** (deterministic): the last 10 turns plus any earlier turn that contains a code
 part, a table, an attachment, or a number with a unit. The user can change it.
