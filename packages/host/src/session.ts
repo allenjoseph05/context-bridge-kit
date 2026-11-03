@@ -3,6 +3,7 @@
 import { readFileSync } from "node:fs";
 import { buildBundle, compile, newFence } from "@cb/compiler";
 import {
+  canonicalJson,
   ExtToHost,
   newPackId,
   newPreviewId,
@@ -21,7 +22,7 @@ import type {
   Turn,
 } from "@cb/schema";
 import { sha256Hex } from "@cb/schema/node";
-import { createContext, sanitizeTranscript } from "@cb/sanitizer";
+import { createContext, sanitizeTranscript, unredact } from "@cb/sanitizer";
 import type { SanitizeContext } from "@cb/sanitizer";
 import { destinationProfile } from "@cb/tokens";
 import type { Vault } from "@cb/vault";
@@ -102,6 +103,8 @@ type CompileParams = {
   blind: boolean;
   excluded: string[];
   forcedPush: string[];
+  /** Placeholders the user chose to reveal (decisions.md, AC-05 rule); cumulative across revises. */
+  revealed: string[];
 };
 
 type Preview = {
@@ -110,6 +113,8 @@ type Preview = {
   pack: ContextPack;
   envelope: string;
   params: CompileParams;
+  /** The transcript this preview was compiled from (sanitised, plus revealed values); stored on approve. */
+  transcript: Transcript;
 };
 
 type Session = {
@@ -166,6 +171,29 @@ function collectFlags(
     }
   }
   return flags;
+}
+
+/** Restore revealed values in every part the sanitiser touches; recompute turn hashes. */
+function revealTranscript(t: Transcript, placeholders: string[], ctx: SanitizeContext): Transcript {
+  if (placeholders.length === 0) return t;
+  const r = (x: string): string => unredact(x, placeholders, ctx);
+  const turns = t.turns.map((turn) => {
+    const parts = turn.parts.map((p): Part => {
+      switch (p.kind) {
+        case "text":
+          return { ...p, text: r(p.text) };
+        case "table":
+          return { ...p, markdown: r(p.markdown) };
+        case "code":
+        case "tool_output":
+          return { ...p, content: r(p.content) };
+        default:
+          return p;
+      }
+    });
+    return { ...turn, parts, sha256: sha256Hex(canonicalJson(parts)) };
+  });
+  return { ...t, turns };
 }
 
 function hasDuplicates(ids: string[]): boolean {
@@ -236,8 +264,9 @@ export function createHost(options: HostOptions): Host {
       expiresAt: new Date(createdAt.getTime() + expiryDays * DAY_MS).toISOString(),
       pull: { transcriptRef: `transcripts/${id}.json`, indexRef: `index/${id}.json` },
     };
+    const transcript = revealTranscript(s.transcript, params.revealed, s.ctx);
     const result = await compile({
-      transcript: s.transcript,
+      transcript,
       selection: params.selection,
       items: [],
       profile: params.profile,
@@ -247,7 +276,7 @@ export function createHost(options: HostOptions): Host {
       excluded: params.excluded,
       forcedPush: params.forcedPush,
       meta,
-      fence: newFence(JSON.stringify({ transcript: s.transcript, meta })),
+      fence: newFence(JSON.stringify({ transcript, meta })),
     });
     if (!result.ok) {
       const { needed, budget } = result.error;
@@ -259,15 +288,20 @@ export function createHost(options: HostOptions): Host {
       );
     }
     // The envelope is used exactly as compile returned it; redactions are not rendered in it.
+    const revealed = new Set(params.revealed);
     const pack: ContextPack = {
       ...result.pack,
-      redactions: [...s.ctx.redactions.values()].map((r) => ({ placeholder: r.placeholder, kind: r.kind })),
+      redactions: [...s.ctx.redactions.values()].map((r) =>
+        revealed.has(r.placeholder)
+          ? { placeholder: r.placeholder, kind: r.kind, revealed: true as const }
+          : { placeholder: r.placeholder, kind: r.kind },
+      ),
     };
     const envelope = result.envelope;
     const images: Array<{ attachmentId: string; mime: string; dataBase64: string }> = []; // T16
     const hash = previewHash(envelope, images.map((i) => i.attachmentId));
     const previewId = newPreviewId();
-    s.last = { previewId, hash, pack, envelope, params };
+    s.last = { previewId, hash, pack, envelope, params, transcript };
     vault.audit({ event: "previewed", sessionId: s.id, sha256: hash });
     return {
       sessionId: s.id,
@@ -275,7 +309,8 @@ export function createHost(options: HostOptions): Host {
       hash,
       envelope,
       images,
-      flags: s.flags,
+      // A revealed placeholder no longer appears anywhere, so its redacted-span flags go too.
+      flags: s.flags.filter((f) => !(f.kind === "redacted" && f.match !== undefined && revealed.has(f.match))),
       cutList: pack.push.manifest,
       notices: params.mode === "condensed" ? [CONDENSED_NOTICE, ...pack.notices] : pack.notices,
       stats: pack.stats,
@@ -292,10 +327,10 @@ export function createHost(options: HostOptions): Host {
 
   function approve(s: Session, previewId: string, hash: string): Reply<"committed"> {
     const p = currentPreview(s, previewId, hash);
-    const { pack, envelope } = p;
+    const { pack, envelope, transcript } = p;
     let written;
     try {
-      written = vault.writePack(pack, envelope, s.transcript, {}); // index arrives in T11
+      written = vault.writePack(pack, envelope, transcript, {}); // index arrives in T11
     } catch (e) {
       console.error("vault write failed:", e instanceof Error ? e.message : e);
       throw new HostError("vault_error", "could not write the pack to the vault");
@@ -361,6 +396,7 @@ export function createHost(options: HostOptions): Host {
           blind: msg.blind ?? false,
           excluded: [],
           forcedPush: [],
+          revealed: [],
         };
         return { type: "preview", requestId: r, ...(await buildPreview(s, params)) };
       }
@@ -368,12 +404,14 @@ export function createHost(options: HostOptions): Host {
         const s = getSession(msg.sessionId);
         const last = currentPreview(s, msg.previewId);
         const e = msg.edits;
-        if (e.unredact.length > 0) throw new HostError("invalid_message", "revealing redactions arrives in T09");
+        // Unknown placeholders are ignored (sanitizer `unredact` semantics).
+        const known = new Set([...s.ctx.redactions.values()].map((x) => x.placeholder));
         const toManifest = [...e.moveToManifest, ...e.removeItemIds];
         const params: CompileParams = {
           ...last.params,
           excluded: union(last.params.excluded, toManifest, e.moveToPush),
           forcedPush: union(last.params.forcedPush, e.moveToPush, toManifest),
+          revealed: union(last.params.revealed, e.unredact.filter((ph) => known.has(ph)), []),
         };
         return { type: "preview", requestId: r, ...(await buildPreview(s, params)) };
       }
