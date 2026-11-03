@@ -93,7 +93,10 @@ describe("vault", () => {
         },
       },
     } as VaultOptions);
-    const second = await buildPack(ID, { createdAt: new Date("2026-11-03T10:00:00Z") });
+    // A new pack id: packs are never overwritten (writePack refuses with `exists`), so the crash
+    // is simulated on a fresh write next to an existing pack.
+    const NEW_ID = "cp_ffffffff";
+    const second = await buildPack(NEW_ID, { createdAt: new Date("2026-11-03T10:00:00Z") });
     expect(() => crashing.writePack(second.pack, second.envelope, second.transcript, { other: true })).toThrow(
       "simulated crash",
     );
@@ -102,7 +105,30 @@ describe("vault", () => {
     for (const [f, bytes] of before) expect(readFileSync(f).equals(bytes), f).toBe(true);
     const vault = openVault({ root });
     expect(vault.readPack(ID)).toEqual({ ok: true, value: first.pack });
+    expect(vault.readPack(NEW_ID)).toEqual({ ok: false, error: { code: "not_found" } });
     expect(vault.listPacks().map((m) => m.id)).toEqual([ID]);
+  });
+
+  it("T06 atomic overwrite of config", () => {
+    const root = join(tempDir(), "vault");
+    openVault({ root }).writeConfig({ extensionId: "abcdefghijklmnop", defaults: { expiryDays: 3 } });
+    const configPath = join(root, "config.json");
+    const before = readFileSync(configPath);
+
+    const crashing = openVault({
+      root,
+      _testHooks: {
+        beforeRename: () => {
+          throw new Error("simulated crash");
+        },
+      },
+    } as VaultOptions);
+    expect(() => crashing.writeConfig({ defaults: { expiryDays: 9 } })).toThrow("simulated crash");
+
+    // The previous config.json is byte-identical and no temp file is left behind.
+    expect(readFileSync(configPath).equals(before)).toBe(true);
+    expect(readdirSync(root).filter((f) => f.endsWith(".tmp"))).toEqual([]);
+    expect(openVault({ root }).readConfig().defaults.expiryDays).toBe(3);
   });
 
   it("T06 path traversal", async () => {

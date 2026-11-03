@@ -56,6 +56,8 @@ const HOST_VERSION = (
 ).version;
 const RECENT_TURNS = 10;
 const DAY_MS = 24 * 3_600_000;
+/** Pack id draws before giving up with `vault_error` (a collision needs 4 random bytes to repeat). */
+const PACK_ID_TRIES = 5;
 const CONDENSED_NOTICE = "condensed mode arrives in T19";
 
 /** `sha256(envelope + "\n" + JSON.stringify(imageIds))`, lowercase hex (AC-15). */
@@ -214,6 +216,15 @@ export function createHost(options: HostOptions): Host {
   const { vault, send } = options;
   const now = options.now ?? ((): Date => new Date());
   const mintPackId = options.newPackId ?? newPackId;
+
+  /** A pack id the vault does not have yet; a taken id is redrawn, never reused (decisions.md). */
+  function freshPackId(): string {
+    for (let i = 0; i < PACK_ID_TRIES; i++) {
+      const id = mintPackId();
+      if (!vaultCall(() => vault.hasPack(id))) return id;
+    }
+    throw new HostError("vault_error", `no unused pack id after ${PACK_ID_TRIES} tries`);
+  }
   const sessions = new Map<string, Session>();
 
   function getSession(id: string): Session {
@@ -262,7 +273,7 @@ export function createHost(options: HostOptions): Host {
   async function buildPreview(s: Session, params: CompileParams): Promise<Reply<"preview">> {
     const createdAt = now();
     const expiryDays = vault.readConfig().defaults.expiryDays;
-    const id = mintPackId();
+    const id = freshPackId();
     const meta = {
       id,
       title: s.transcript.source.title ?? "Untitled chat",

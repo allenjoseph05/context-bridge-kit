@@ -33,20 +33,25 @@ export function itemId(n: number): string {
   return positional("i", n);
 }
 
-function randomHex8(): string {
-  const bytes = new Uint8Array(4);
-  crypto.getRandomValues(bytes);
+/** Source of `n` random bytes for ids. Injectable so tests are deterministic; default: Web Crypto. */
+export type IdRng = (n: number) => Uint8Array;
+
+const cryptoRng: IdRng = (n) => crypto.getRandomValues(new Uint8Array(n));
+
+function randomHex8(rng: IdRng): string {
+  const bytes = rng(4);
+  if (bytes.length !== 4) throw new RangeError(`IdRng returned ${bytes.length} bytes, expected 4`);
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-export function newPackId(): string {
-  return `cp_${randomHex8()}`;
+export function newPackId(rng: IdRng = cryptoRng): string {
+  return `cp_${randomHex8(rng)}`;
 }
 
-export function newSessionId(): string {
-  return `s_${randomHex8()}`;
+export function newSessionId(rng: IdRng = cryptoRng): string {
+  return `s_${randomHex8(rng)}`;
 }
 
-export function newPreviewId(): string {
-  return `p_${randomHex8()}`;
+export function newPreviewId(rng: IdRng = cryptoRng): string {
+  return `p_${randomHex8(rng)}`;
 }

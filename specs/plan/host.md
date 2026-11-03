@@ -41,6 +41,9 @@ part, a table, an attachment, or a number with a unit. The user can change it.
   config.json                 { extensionId, model, defaults }
 ```
 - Writes are atomic (write temp file, then rename).
+- **Packs are never overwritten.** `writePack` refuses with `exists` when `hasPack(id)` (any of the
+  pack's four files exists). The host draws pack ids with `freshPackId`: a taken id is redrawn, up
+  to 5 draws, then `vault_error`.
 - **Expiry (AC-21):** packs expire 7 days after creation (`config.defaults.expiryDays`). On host
   start and on `list_packs`, expired packs are deleted with their envelope, transcript and index; a
   file in `files/` is deleted when no remaining pack references it. Clock is injectable for tests.

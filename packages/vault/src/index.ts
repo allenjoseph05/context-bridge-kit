@@ -27,7 +27,8 @@ import { ContextPack, PACK_ID, PackMeta, Route, SESSION_ID, SHA256_HEX, Transcri
 import { sha256Hex } from "@cb/schema/node";
 import { z } from "zod";
 
-export type VaultErrorCode = "not_found" | "invalid_id" | "invalid";
+/** `exists`: `writePack` refused because the pack id is taken (packs are never overwritten). */
+export type VaultErrorCode = "not_found" | "invalid_id" | "invalid" | "exists";
 export type VaultResult<T> = { ok: true; value: T } | { ok: false; error: { code: VaultErrorCode } };
 
 export const AuditEventName = z.enum([
@@ -94,7 +95,10 @@ type TestHooks = { beforeRename?: (target: string) => void };
 
 export type Vault = {
   readonly root: string;
+  /** Refuses with `exists` when `hasPack(pack.id)`; never overwrites. */
   writePack(pack: ContextPack, envelope: string, transcript: Transcript, index: unknown): VaultResult<void>;
+  /** True when any of the pack's files exist (expired or partly written packs count); false for invalid ids. */
+  hasPack(id: string): boolean;
   readPack(id: string): VaultResult<ContextPack>;
   readEnvelope(id: string): VaultResult<string>;
   readTranscript(id: string): VaultResult<Transcript>;
@@ -248,6 +252,11 @@ export function openVault(options: VaultOptions = {}): Vault {
    * Remove a pack's four files, then the files it referenced that no remaining pack references.
    * Returns the number of entries removed from `files/`.
    */
+  function hasPack(id: string): boolean {
+    if (!PACK_ID.test(id)) return false;
+    return [paths.pack(id), paths.envelope(id), paths.transcript(id), paths.index(id)].some((p) => existsSync(p));
+  }
+
   function removePack(id: string): number {
     const refs = fileRefs(id);
     for (const p of [paths.pack(id), paths.envelope(id), paths.transcript(id), paths.index(id)]) remove(p);
@@ -276,11 +285,14 @@ export function openVault(options: VaultOptions = {}): Vault {
   return {
     root,
 
+    hasPack,
+
     writePack(pack, envelope, transcript, index) {
       if (!PACK_ID.test(pack.id)) return fail("invalid_id");
       const p = ContextPack.safeParse(pack);
       const t = Transcript.safeParse(transcript);
       if (!p.success || !t.success) return fail("invalid");
+      if (hasPack(pack.id)) return fail("exists");
       // The pack file goes last: listPacks only sees packs whose other files are in place.
       writeJson(paths.transcript(pack.id), t.data);
       writeJson(paths.index(pack.id), index);

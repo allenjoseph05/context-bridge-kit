@@ -61,4 +61,5 @@ Embeddings. The MCP tool wrapper (T11).
 - Extra tests beyond the table: `chunk.test.ts` (chunk limits, no loss, refs/offsets).
 - Observed once, not T10: `@cb/schema ids › T01 ids` failed in one full run while T10 stubs threw;
   it passes alone. The likely cause is a chance collision among 1000 random 32-bit ids (≈ 1 in 2,900 runs).
-  Unconfirmed (assertion message not captured); test left untouched.
+  Unconfirmed (assertion message not captured); test left untouched. Fixed afterwards (decisions.md,
+  "fix" entry): the test now uses an injected deterministic RNG.
