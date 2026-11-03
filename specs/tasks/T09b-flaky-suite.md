@@ -40,7 +40,23 @@ relies on (constitution §13).
 Changing test timeouts globally without a measured cause.
 
 ## Done when
-- [ ] Criterion 1 recorded
-- [ ] `finish-task` run
+- [x] Criterion 1 recorded
+- [x] `finish-task` run
 
 ## Implementation notes
+- Not reproduced; criterion 1 met by clean runs (Win 11, Node 25.2.1, vitest 3.2.7), all exit 0, no
+  `[file-errors]` line: revise.test.ts ×50, `@cb/host` ×20, full suite ×20, shuffled ×15, `pnpm check` ×5,
+  hanging-process ×1 (no open handles), `@cb/host` ×9 and full ×4 during forced `tsc -b`/extension rebuilds.
+  45 full-suite runs, 124 overall.
+- Planted failures: SIGKILLed worker → vitest aborts with no summary (not the observed run); afterAll/
+  afterEach error → file fails but tests count as passed; unhandled rejection → `Errors 1 error` line.
+  Only an import/collection error gives the observed signature (file failed, its tests uncounted).
+- Lead (left to the human, decisions.md): tests import workspace packages from compiled `dist/`
+  (exports); without `packages/schema/dist` 8/9 host files fail at import. A missing, stale or
+  half-written `dist/` matches the signature.
+- Instrumentation: root `vitest.config.ts` adds `scripts/vitest-file-errors-reporter.ts` after
+  `default`; it prints `[file-errors]` lines after the summary (file-level failures and unhandled
+  errors with their file). Passing `--reporter` on the CLI replaces the list, so add it there too.
+- `scripts/stress-tests.ps1 -Mode full|shuffle|check|revise|host|hanging -Runs N [-LogDir]` keeps
+  logs + JUnit XML of failing runs and a summary.csv (default `%TEMP%\cb-stress`). No .sh twin.
+- `vitest.workspace.ts` kept (T00 decision); its deprecation notice is expected.
