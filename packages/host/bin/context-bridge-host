@@ -1,0 +1,4 @@
+#!/bin/sh
+# Fallback launcher using `node` from PATH (development). Chrome uses the launcher that
+# scripts/install-host.sh generates in <vault>/host/, which has node's absolute path.
+exec node "$(dirname "$0")/../dist/main.js" "$@"

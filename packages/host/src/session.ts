@@ -1,5 +1,28 @@
 // Sessions and message handlers (protocol.md, host.md §Pipeline per session).
-import type { HostToExt, Transcript } from "@cb/schema";
+// Sessions live in memory only; redaction values never leave the session's SanitizeContext.
+import { buildBundle, compile, newFence } from "@cb/compiler";
+import {
+  ExtToHost,
+  newPackId,
+  newPreviewId,
+  newSessionId,
+} from "@cb/schema";
+import type {
+  ContextPack,
+  Deliverable,
+  ErrorCode,
+  Flag,
+  HostToExt,
+  Part,
+  Profile,
+  Route,
+  Transcript,
+  Turn,
+} from "@cb/schema";
+import { sha256Hex } from "@cb/schema/node";
+import { createContext, sanitizeTranscript } from "@cb/sanitizer";
+import type { SanitizeContext } from "@cb/sanitizer";
+import { destinationProfile } from "@cb/tokens";
 import type { Vault } from "@cb/vault";
 
 export type HostOptions = {
@@ -20,11 +43,42 @@ export type Host = {
   sessionCount(): number;
 };
 
+const HOST_VERSION = "0.0.0";
+const RECENT_TURNS = 10;
+const DAY_MS = 24 * 3_600_000;
+const CONDENSED_NOTICE = "condensed mode arrives in T19";
+
 /** `sha256(envelope + "\n" + JSON.stringify(imageIds))`, lowercase hex (AC-15). */
 export function previewHash(envelope: string, imageIds: string[]): string {
-  void envelope;
-  void imageIds;
-  throw new Error("not implemented (T07)");
+  return sha256Hex(envelope + "\n" + JSON.stringify(imageIds));
+}
+
+/** A number followed by a unit from a fixed list (decisions.md, T07 test review (d)). */
+const NUMBER_WITH_UNIT =
+  /(?<![\w.,])\d+(?:[.,]\d+)?\s?(?:%|ms|s|sec|min|h|[KMGT]i?B|px|kg|g|km|m|cm|mm|[$€£¥])(?![\w])|[$€£¥]\s?\d/;
+
+function partText(p: Part): string | undefined {
+  switch (p.kind) {
+    case "text":
+      return p.text;
+    case "table":
+      return p.markdown;
+    case "code":
+    case "tool_output":
+      return p.content;
+    default:
+      return undefined;
+  }
+}
+
+function isNotable(turn: Turn): boolean {
+  return turn.parts.some(
+    (p) =>
+      p.kind === "code" ||
+      p.kind === "table" ||
+      p.kind === "attachment" ||
+      (p.kind === "text" && NUMBER_WITH_UNIT.test(p.text)),
+  );
 }
 
 /**
@@ -32,11 +86,352 @@ export function previewHash(envelope: string, imageIds: string[]): string {
  * an attachment, or a number with a unit. Turn ids in transcript order.
  */
 export function suggestSelection(transcript: Transcript): string[] {
-  void transcript;
-  throw new Error("not implemented (T07)");
+  const firstRecent = transcript.turns.length - RECENT_TURNS;
+  return transcript.turns.filter((t, i) => i >= firstRecent || isNotable(t)).map((t) => t.id);
+}
+
+type CompileParams = {
+  selection: string[];
+  profile: Profile;
+  route: Route;
+  mode: "condensed" | "verbatim";
+  blind: boolean;
+  excluded: string[];
+  forcedPush: string[];
+};
+
+type Preview = {
+  previewId: string;
+  hash: string;
+  pack: ContextPack;
+  envelope: string;
+  params: CompileParams;
+};
+
+type Session = {
+  id: string;
+  ctx: SanitizeContext;
+  /** Sanitised; the only transcript the host uses or stores. */
+  transcript: Transcript;
+  flags: Flag[];
+  /** The last preview; `approve` must match it. Consumed by a successful approve. */
+  last?: Preview;
+};
+
+type Reply<T extends HostToExt["type"]> = Omit<Extract<HostToExt, { type: T }>, "type" | "requestId">;
+
+class HostError extends Error {
+  constructor(
+    readonly code: ErrorCode,
+    message: string,
+    readonly recoverable: boolean = true,
+    readonly extra: { needed?: number; budget?: number } = {},
+  ) {
+    super(message);
+  }
+}
+
+function requestIdOf(raw: unknown): string {
+  if (typeof raw === "object" && raw !== null && "requestId" in raw) {
+    const r = (raw as { requestId: unknown }).requestId;
+    if (typeof r === "string" && r !== "") return r;
+  }
+  return "unknown";
+}
+
+/** Protocol flags for a sanitised transcript: instruction-like text and redacted placeholders. */
+function collectFlags(
+  t: Transcript,
+  instr: Record<string, Array<{ match: string; index: number }>>,
+  ctx: SanitizeContext,
+): Flag[] {
+  const flags: Flag[] = [];
+  const placeholders = [...ctx.redactions.values()].map((r) => r.placeholder);
+  for (const turn of t.turns) {
+    for (const f of instr[turn.id] ?? []) {
+      flags.push({ ref: turn.id, kind: "possible_instruction", match: f.match, index: f.index });
+    }
+    for (const p of turn.parts) {
+      const text = partText(p);
+      if (text === undefined) continue;
+      for (const ph of placeholders) {
+        for (let i = text.indexOf(ph); i !== -1; i = text.indexOf(ph, i + ph.length)) {
+          flags.push({ ref: turn.id, kind: "redacted", match: ph, index: i });
+        }
+      }
+    }
+  }
+  return flags;
+}
+
+function hasDuplicates(ids: string[]): boolean {
+  return new Set(ids).size !== ids.length;
+}
+
+function union(a: string[], add: string[], remove: string[]): string[] {
+  const drop = new Set(remove);
+  return [...new Set([...a, ...add])].filter((x) => !drop.has(x));
 }
 
 export function createHost(options: HostOptions): Host {
-  void options;
-  throw new Error("not implemented (T07)");
+  const { vault, send } = options;
+  const now = options.now ?? ((): Date => new Date());
+  const sessions = new Map<string, Session>();
+
+  function getSession(id: string): Session {
+    const s = sessions.get(id);
+    if (s === undefined) throw new HostError("unknown_session", "unknown session", true);
+    return s;
+  }
+
+  async function ingest(transcript: Transcript): Promise<Reply<"ingested">> {
+    if (hasDuplicates(transcript.turns.map((t) => t.id))) {
+      throw new HostError("invalid_message", "duplicate turn id");
+    }
+    if (hasDuplicates(transcript.attachments.map((a) => a.id))) {
+      throw new HostError("invalid_message", "duplicate attachment id");
+    }
+    // Always sanitise here, whatever the extension did or claims (decisions.md, T07).
+    const ctx = createContext();
+    const sanitised = await sanitizeTranscript(transcript, ctx);
+    const flags = collectFlags(sanitised.transcript, sanitised.flags, ctx);
+    const id = newSessionId();
+    sessions.set(id, { id, ctx, transcript: sanitised.transcript, flags });
+    const redactions = [...ctx.redactions.values()].map((r) => ({ placeholder: r.placeholder, kind: r.kind }));
+    vault.audit({
+      event: "captured",
+      sessionId: id,
+      counts: {
+        turns: sanitised.transcript.turns.length,
+        attachments: sanitised.transcript.attachments.length,
+        redactions: redactions.length,
+        flags: flags.length,
+      },
+    });
+    return {
+      sessionId: id,
+      turns: sanitised.transcript.turns,
+      attachments: sanitised.transcript.attachments,
+      flags,
+      redactions,
+      missingFiles: sanitised.transcript.attachments.filter((a) => a.sha256 === undefined).map((a) => a.id),
+      suggestedProfile: "continue",
+      suggestedSelection: suggestSelection(sanitised.transcript),
+    };
+  }
+
+  /** Verbatim compile → preview. Stores it as the session's last preview only on success. */
+  async function buildPreview(s: Session, params: CompileParams): Promise<Reply<"preview">> {
+    const createdAt = now();
+    const expiryDays = vault.readConfig().defaults.expiryDays;
+    const id = newPackId();
+    const meta = {
+      id,
+      title: s.transcript.source.title ?? "Untitled chat",
+      createdAt: createdAt.toISOString(),
+      expiresAt: new Date(createdAt.getTime() + expiryDays * DAY_MS).toISOString(),
+      pull: { transcriptRef: `transcripts/${id}.json`, indexRef: `index/${id}.json` },
+    };
+    const result = await compile({
+      transcript: s.transcript,
+      selection: params.selection,
+      items: [],
+      profile: params.profile,
+      blind: params.blind,
+      mode: "verbatim", // condensed arrives in T19
+      destination: destinationProfile(params.route, params.profile),
+      excluded: params.excluded,
+      forcedPush: params.forcedPush,
+      meta,
+      fence: newFence(JSON.stringify({ transcript: s.transcript, meta })),
+    });
+    if (!result.ok) {
+      const { needed, budget } = result.error;
+      throw new HostError(
+        "over_budget",
+        `the smallest pack needs ${needed} tokens; the budget is ${budget}`,
+        true,
+        { needed, budget },
+      );
+    }
+    // The envelope is used exactly as compile returned it; redactions are not rendered in it.
+    const pack: ContextPack = {
+      ...result.pack,
+      redactions: [...s.ctx.redactions.values()].map((r) => ({ placeholder: r.placeholder, kind: r.kind })),
+    };
+    const envelope = result.envelope;
+    const images: Array<{ attachmentId: string; mime: string; dataBase64: string }> = []; // T16
+    const hash = previewHash(envelope, images.map((i) => i.attachmentId));
+    const previewId = newPreviewId();
+    s.last = { previewId, hash, pack, envelope, params };
+    vault.audit({ event: "previewed", sessionId: s.id, sha256: hash });
+    return {
+      sessionId: s.id,
+      previewId,
+      hash,
+      envelope,
+      images,
+      flags: s.flags,
+      cutList: pack.push.manifest,
+      notices: params.mode === "condensed" ? [CONDENSED_NOTICE, ...pack.notices] : pack.notices,
+      stats: pack.stats,
+    };
+  }
+
+  function currentPreview(s: Session, previewId: string, hash?: string): Preview {
+    const last = s.last;
+    if (last === undefined || last.previewId !== previewId || (hash !== undefined && last.hash !== hash)) {
+      throw new HostError("hash_mismatch", "the preview changed; review the current preview and approve again");
+    }
+    return last;
+  }
+
+  function approve(s: Session, previewId: string, hash: string): Reply<"committed"> {
+    const p = currentPreview(s, previewId, hash);
+    const { pack, envelope } = p;
+    let written;
+    try {
+      written = vault.writePack(pack, envelope, s.transcript, {}); // index arrives in T11
+    } catch (e) {
+      console.error("vault write failed:", e instanceof Error ? e.message : e);
+      throw new HostError("vault_error", "could not write the pack to the vault");
+    }
+    if (!written.ok) throw new HostError("vault_error", `could not write the pack (${written.error.code})`);
+    s.last = undefined; // a preview is approved once
+    const route = p.params.route;
+    vault.audit({ event: "approved", sessionId: s.id, packId: pack.id, route, sha256: hash });
+    let deliverable: Deliverable;
+    switch (route) {
+      case "clipboard":
+        deliverable = { kind: "clipboard", text: envelope };
+        break;
+      case "bundle":
+        deliverable = {
+          kind: "bundle",
+          fileName: `context-pack-${pack.id}.zip`,
+          zipBase64: Buffer.from(buildBundle(pack, envelope, new Map())).toString("base64"),
+        };
+        break;
+      case "mcp":
+        deliverable = {
+          kind: "mcp",
+          packId: pack.id,
+          instruction: `Load context pack ${pack.id} with the Context Bridge tools.`,
+        };
+        break;
+    }
+    return { packId: pack.id, route, deliverable };
+  }
+
+  function vaultCall<T>(f: () => T): T {
+    try {
+      return f();
+    } catch (e) {
+      console.error("vault error:", e instanceof Error ? e.message : e);
+      throw new HostError("vault_error", "the vault could not be read or written");
+    }
+  }
+
+  async function dispatch(msg: ExtToHost): Promise<HostToExt> {
+    const r = msg.requestId;
+    switch (msg.type) {
+      case "hello":
+        return {
+          type: "hello_ok",
+          requestId: r,
+          protocol: 1,
+          hostVersion: options.hostVersion ?? HOST_VERSION,
+          model: { available: false }, // model calls arrive in T17
+        };
+      case "ingest":
+        return { type: "ingested", requestId: r, ...(await ingest(msg.transcript)) };
+      case "add_file":
+        throw new HostError("invalid_message", "attachments arrive in T15/T16");
+      case "compile": {
+        const s = getSession(msg.sessionId);
+        const params: CompileParams = {
+          selection: msg.selection,
+          profile: msg.profile,
+          route: msg.route,
+          mode: msg.mode,
+          blind: msg.blind ?? false,
+          excluded: [],
+          forcedPush: [],
+        };
+        return { type: "preview", requestId: r, ...(await buildPreview(s, params)) };
+      }
+      case "revise": {
+        const s = getSession(msg.sessionId);
+        const last = currentPreview(s, msg.previewId);
+        const e = msg.edits;
+        if (e.unredact.length > 0) throw new HostError("invalid_message", "revealing redactions arrives in T09");
+        const toManifest = [...e.moveToManifest, ...e.removeItemIds];
+        const params: CompileParams = {
+          ...last.params,
+          excluded: union(last.params.excluded, toManifest, e.moveToPush),
+          forcedPush: union(last.params.forcedPush, e.moveToPush, toManifest),
+        };
+        return { type: "preview", requestId: r, ...(await buildPreview(s, params)) };
+      }
+      case "approve": {
+        const s = getSession(msg.sessionId);
+        return { type: "committed", requestId: r, ...approve(s, msg.previewId, msg.hash) };
+      }
+      case "delete_pack": {
+        const res = vaultCall(() => vault.deletePack(msg.packId));
+        // Idempotent: a pack that is already gone counts as deleted (decisions.md, T07).
+        if (!res.ok && res.error.code !== "not_found") {
+          throw new HostError("vault_error", `could not delete the pack (${res.error.code})`);
+        }
+        return { type: "deleted", requestId: r, packId: msg.packId };
+      }
+      case "list_packs": {
+        const packs = vaultCall(() => {
+          vault.sweepExpired();
+          return vault.listPacks();
+        });
+        return { type: "packs", requestId: r, packs };
+      }
+    }
+  }
+
+  return {
+    async handle(raw: unknown): Promise<void> {
+      const requestId = requestIdOf(raw);
+      const parsed = ExtToHost.safeParse(raw);
+      if (!parsed.success) {
+        // Name the failing fields only; never echo content.
+        const where = parsed.error.issues
+          .slice(0, 3)
+          .map((i) => i.path.join(".") || "message")
+          .join(", ");
+        send({ type: "error", requestId, code: "invalid_message", message: `invalid message: ${where}`, recoverable: true });
+        return;
+      }
+      try {
+        send(await dispatch(parsed.data));
+      } catch (e) {
+        if (e instanceof HostError) {
+          send({
+            type: "error",
+            requestId,
+            code: e.code,
+            message: e.message,
+            recoverable: e.recoverable,
+            ...e.extra,
+          });
+        } else {
+          console.error("internal error:", e instanceof Error ? e.stack : e);
+          send({ type: "error", requestId, code: "internal", message: "internal error", recoverable: false });
+        }
+      }
+    },
+    close(): void {
+      for (const s of sessions.values()) s.ctx.redactions.clear();
+      sessions.clear();
+    },
+    sessionCount(): number {
+      return sessions.size;
+    },
+  };
 }
