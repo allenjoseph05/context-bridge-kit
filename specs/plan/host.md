@@ -39,6 +39,14 @@ part, a table, an attachment, or a number with a unit. The user can change it.
   start and on `list_packs`, expired packs are deleted with their envelope, transcript and index; a
   file in `files/` is deleted when no remaining pack references it. Clock is injectable for tests.
 - `deletePack(packId)` does the same on demand.
+- **File references:** a pack references `files/<sha>` and `files/<sha>.txt` for every
+  `attachment.sha256` in its stored transcript.
+- **Orphan cleanup:** `sweepExpired` also deletes files in `files/` that no pack references and
+  whose mtime is older than 24 h (the grace period protects files of a session still in progress;
+  `putFile` of existing bytes refreshes the mtime), and `cache/extract/` entries older than
+  `expiryDays`. Each deletion writes an `expired` audit event without content.
+- **Ids before disk:** pack ids, shas and cache keys (`[A-Za-z0-9_-]{1,128}`) are checked by regex
+  before any filesystem access; anything else returns `invalid_id`.
 
 ## Audit (AC-22)
 One JSON line per event: `{ ts, event, sessionId?, packId?, counts?, sha256?, tool?, route? }` where

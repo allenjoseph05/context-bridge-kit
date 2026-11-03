@@ -90,7 +90,24 @@ importers:
         specifier: ^1.0.21
         version: 1.0.21
 
-  packages/vault: {}
+  packages/vault:
+    dependencies:
+      '@cb/schema':
+        specifier: workspace:*
+        version: link:../schema
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
+    devDependencies:
+      '@cb/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@cb/sanitizer':
+        specifier: workspace:*
+        version: link:../sanitizer
+      '@cb/tokens':
+        specifier: workspace:*
+        version: link:../tokens
 
 packages:
 

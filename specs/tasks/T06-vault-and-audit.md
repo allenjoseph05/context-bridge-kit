@@ -24,6 +24,13 @@ layout and the rules in one place.
 - Atomic writes (temp file + rename). Clock injectable (`now`).
 - `deletePack` and `sweepExpired` remove pack, envelope, transcript, index, and files no longer
   referenced by any remaining pack. Every removal writes an audit event.
+- Reads, deletes and id-keyed writes return typed results `{ ok: true, value } | { ok: false, error:
+  { code: "not_found" | "invalid_id" | "invalid" } }`; ids, shas and cache keys are validated by
+  regex before any filesystem access. `audit()` throws on unknown fields (a programming error) and
+  its parameter type makes them a compile error. A pack references `files/<sha>[.txt]` for every
+  `attachment.sha256` in its stored transcript. `sweepExpired` also removes orphan files older than
+  24 h and cache entries older than `expiryDays`. Crash simulation uses the undocumented
+  `_testHooks.beforeRename` option, never passed by host or MCP server.
 
 ## Acceptance criteria → tests
 | # | Criterion | Test (`packages/vault/test/…`, using a temp dir) |
@@ -36,6 +43,8 @@ layout and the rules in one place.
 | 6 | Audit lines are valid JSON with `ts` and `event`; the audit API rejects fields outside the allowed set | `audit.test.ts › AC-22 audit shape` |
 | 7 | After writing `small-chat.json` (sanitised by `@cb/sanitizer`) as a pack, no file in the vault contains the fake key or email from the raw fixture | `audit.test.ts › AC-05 AC-22 no secrets on disk` |
 | 8 | A crash between temp write and rename leaves the old file intact (simulate by throwing before rename) | `vault.test.ts › T06 atomic writes` |
+| 9 | `sweepExpired` with a fake clock deletes files in `files/` that no pack references and are older than 24 h (younger orphans stay), and cache entries older than `expiryDays`; each deletion audits `expired` without content | `expiry.test.ts › T06 orphan files and stale cache` |
+| 10 | Every read, write and delete function rejects an id, sha or cache key such as `../../etc/passwd` with `invalid_id` before touching the disk; a file outside the vault stays intact | `vault.test.ts › T06 path traversal` |
 
 ## Out of scope
 Encryption (designed, not built). Index format (T10 defines it; store it as opaque JSON here).

@@ -14,7 +14,7 @@ Status: `todo` · `in_progress` · `review` (tests or code waiting for the human
 | T03 | Sanitiser (`@cb/sanitizer`) | T01, T02 | M | required | | done |
 | T04 | Token counting, budgets, envelope | T01 | S | — | | done |
 | T05 | Compiler, verbatim mode, coverage, bundle | T03, T04 | M | required | | done |
-| T06 | Vault, expiry, audit | T01, T03 | M | — | | todo |
+| T06 | Vault, expiry, audit | T01, T03 | M | — | | in_progress |
 | T07 | Bridge host: protocol, sessions, approval, install | T02, T05, T06 | L | required | | todo |
 | T08 | Extension shell: manifest, port, Capture and Select | T07 | L | — | | todo |
 | T09 | Review and Deliver; clipboard and bundle routes | T08 | M | — | **G1** | todo |
