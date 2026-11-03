@@ -14,3 +14,11 @@ button.primary { font-weight: 600; }
 .turn-id { font-weight: 600; }
 .turn-text { white-space: pre-wrap; word-break: break-word; opacity: 0.85; }
 .envelope { white-space: pre-wrap; word-break: break-word; max-height: 60vh; overflow: auto; border: 1px solid #8884; padding: 8px; font: 12px/1.4 ui-monospace, monospace; }
+h2 { font-size: 13px; margin: 10px 0 4px; }
+mark { border-radius: 2px; padding: 0 1px; color: inherit; }
+mark.flag-redacted { background: #f2c94c66; }
+mark.flag-possible_instruction { background: #eb575766; outline: 1px dashed #eb5757; }
+mark.flag-ungrounded { background: #9b51e066; }
+.confirm { border: 1px solid #c90; border-radius: 4px; padding: 6px 8px; margin: 6px 0; }
+.pushed, .cut, .redactions, .notices { padding-left: 16px; }
+.row a { margin-right: 10px; }

@@ -1,8 +1,8 @@
-// Side panel screens (plan/extension.md §Side panel screens): Capture → Select → Working → Review.
-// Review is a placeholder that shows the raw envelope (full Review is T09).
+// Side panel screens (plan/extension.md §Side panel screens): Capture → Select → Working → Review → Deliver.
+// Nothing is copied or downloaded before `committed` (AC-15); approve binds the displayed preview.
 // Page text is rendered as text only: no dangerouslySetInnerHTML anywhere (S14).
 import { parsePaste } from "@cb/adapters";
-import type { Part, Profile, Route, Turn } from "@cb/schema";
+import type { Edits, Flag, ManifestEntry, Part, Profile, Route, Turn } from "@cb/schema";
 import { countTokens, effectiveBudget } from "@cb/tokens";
 import type { JSX } from "preact";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
@@ -12,12 +12,17 @@ type Mode = "condensed" | "verbatim";
 type Fallback = "paste" | "verbatim" | "clipboard";
 type Ingested = Extract<HostReply, { type: "ingested" }>;
 type Preview = Extract<HostReply, { type: "preview" }>;
+type Committed = Extract<HostReply, { type: "committed" }>;
+
+/** Outcome of the automatic delivery step after `committed`. */
+type Delivery = { state: "done" } | { state: "failed"; message: string } | { state: "manual" };
 
 type Screen =
   | { name: "capture" }
   | { name: "select" }
   | { name: "working"; progress?: Progress }
-  | { name: "review"; preview: Preview };
+  | { name: "review"; preview: Preview; busy: boolean }
+  | { name: "deliver"; committed: Committed; delivery: Delivery; deleted: boolean; busy: boolean };
 
 interface PanelError {
   message: string;
@@ -54,6 +59,13 @@ const FALLBACK_LABEL: Readonly<Record<Fallback, string>> = {
   clipboard: "Use clipboard",
 };
 const PREVIEW_CHARS = 280;
+const NO_EDITS: Edits = { removeItemIds: [], keepUngroundedIds: [], unredact: [], moveToManifest: [], moveToPush: [] };
+const DATA_NOTE = "The destination's own data policy applies once you send.";
+const DESTINATIONS: readonly [string, string][] = [
+  ["Open Gemini", "https://gemini.google.com/"],
+  ["Open Claude", "https://claude.ai/"],
+  ["Open ChatGPT", "https://chatgpt.com/"],
+];
 
 /** Token count of one part's text; attachments count 0 until T16 (decisions.md, T08). */
 function partTokens(p: Part): number {
@@ -95,6 +107,94 @@ function partText(p: Part): string {
 function turnPreview(t: Turn): string {
   const text = t.parts.map(partText).join("\n");
   return text.length > PREVIEW_CHARS ? `${text.slice(0, PREVIEW_CHARS)}…` : text;
+}
+
+/** Turn ids covered by a manifest ref (`t004` or `t002-t005`); other refs cover none. */
+function refTurns(ref: string): string[] {
+  if (/^t\d{3}$/.test(ref)) return [ref];
+  const m = /^t(\d{3})-t(\d{3})$/.exec(ref);
+  if (!m) return [];
+  const out: string[] = [];
+  for (let n = Number(m[1]); n <= Number(m[2]); n++) out.push(`t${String(n).padStart(3, "0")}`);
+  return out;
+}
+
+interface Segment {
+  text: string;
+  kind?: Flag["kind"];
+}
+
+/**
+ * Split the envelope into plain and marked segments: every occurrence of a flag's `match` is
+ * marked with the flag's kind (earliest, then longest, wins on overlap). Rendered as text only (S14).
+ */
+export function markEnvelope(envelope: string, flags: readonly Flag[]): Segment[] {
+  const spans: { start: number; end: number; kind: Flag["kind"] }[] = [];
+  const seen = new Set<string>();
+  for (const f of flags) {
+    const key = `${f.kind}:${f.match ?? ""}`;
+    if (!f.match || seen.has(key)) continue;
+    seen.add(key);
+    for (let i = envelope.indexOf(f.match); i !== -1; i = envelope.indexOf(f.match, i + f.match.length)) {
+      spans.push({ start: i, end: i + f.match.length, kind: f.kind });
+    }
+  }
+  spans.sort((a, b) => a.start - b.start || b.end - a.end);
+  const out: Segment[] = [];
+  let at = 0;
+  for (const sp of spans) {
+    if (sp.start < at) continue; // overlaps an earlier mark
+    if (sp.start > at) out.push({ text: envelope.slice(at, sp.start) });
+    out.push({ text: envelope.slice(sp.start, sp.end), kind: sp.kind });
+    at = sp.end;
+  }
+  if (at < envelope.length) out.push({ text: envelope.slice(at) });
+  return out;
+}
+
+function decodeBase64(b64: string): Uint8Array<ArrayBuffer> {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+function errorText(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}
+
+async function copyText(text: string): Promise<Delivery> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return { state: "done" };
+  } catch (e) {
+    return { state: "failed", message: errorText(e) };
+  }
+}
+
+async function downloadZip(fileName: string, zipBase64: string): Promise<Delivery> {
+  try {
+    const blob = new Blob([decodeBase64(zipBase64)], { type: "application/zip" });
+    const url = URL.createObjectURL(blob);
+    await chrome.downloads.download({ url, filename: fileName, saveAs: false });
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    return { state: "done" };
+  } catch (e) {
+    return { state: "failed", message: errorText(e) };
+  }
+}
+
+/** Runs only after `committed` (AC-15). MCP needs no automatic step. */
+function deliver(c: Committed): Promise<Delivery> {
+  const d = c.deliverable;
+  switch (d.kind) {
+    case "clipboard":
+      return copyText(d.text);
+    case "bundle":
+      return downloadZip(d.fileName, d.zipBase64);
+    case "mcp":
+      return Promise.resolve({ state: "manual" });
+  }
 }
 
 export interface PanelProps {
@@ -213,12 +313,74 @@ export function Panel({ client }: PanelProps): JSX.Element {
       return fail(r.error.message, undefined);
     }
     if (r.reply.type === "preview") {
-      setScreen({ name: "review", preview: r.reply });
+      setScreen({ name: "review", preview: r.reply, busy: false });
       return;
     }
     setScreen({ name: "select" });
     if (r.reply.type === "error") return fail(r.reply.message, r.reply.fallback);
     fail(`Unexpected reply from the host: ${r.reply.type}`, undefined);
+  };
+
+  /** Leave Review after a failure: the old preview must not stay approvable on screen. */
+  const dropPreview = (message: string, fallback: Fallback | undefined): void => {
+    setScreen({ name: "select" });
+    fail(message, fallback);
+  };
+
+  const revise = async (preview: Preview, edits: Partial<Edits>): Promise<void> => {
+    if (!session || op.current) return; // one revise or approve at a time
+    setError(undefined);
+    const ctl = begin();
+    setScreen({ name: "review", preview, busy: true });
+    const r = await client.request(
+      { type: "revise", sessionId: session.sessionId, previewId: preview.previewId, edits: { ...NO_EDITS, ...edits } },
+      { signal: ctl.signal },
+    );
+    if (!current(ctl)) return;
+    op.current = undefined;
+    if (!r.ok) return dropPreview(r.error.message, undefined);
+    if (r.reply.type === "preview") return setScreen({ name: "review", preview: r.reply, busy: false });
+    if (r.reply.type === "error") return dropPreview(r.reply.message, r.reply.fallback);
+    dropPreview(`Unexpected reply from the host: ${r.reply.type}`, undefined);
+  };
+
+  const approve = async (preview: Preview): Promise<void> => {
+    // Never approve while a revise (or anything else) is in flight: the displayed preview is about to change.
+    if (!session || op.current) return;
+    setError(undefined);
+    const ctl = begin();
+    setScreen({ name: "review", preview, busy: true });
+    const r = await client.request(
+      { type: "approve", sessionId: session.sessionId, previewId: preview.previewId, hash: preview.hash },
+      { signal: ctl.signal },
+    );
+    if (!current(ctl)) return;
+    op.current = undefined;
+    if (!r.ok) return dropPreview(r.error.message, undefined);
+    if (r.reply.type === "error") return dropPreview(r.reply.message, r.reply.fallback);
+    if (r.reply.type !== "committed") return dropPreview(`Unexpected reply from the host: ${r.reply.type}`, undefined);
+    const committed = r.reply;
+    const delivery = await deliver(committed);
+    setScreen({ name: "deliver", committed, delivery, deleted: false, busy: false });
+  };
+
+  const redeliver = async (committed: Committed, step: () => Promise<Delivery>): Promise<void> => {
+    const delivery = await step();
+    setScreen((s) => (s.name === "deliver" && s.committed === committed ? { ...s, delivery } : s));
+  };
+
+  const deletePack = async (committed: Committed): Promise<void> => {
+    setError(undefined);
+    const ctl = begin();
+    setScreen((s) => (s.name === "deliver" ? { ...s, busy: true } : s));
+    const r = await client.request({ type: "delete_pack", packId: committed.packId }, { signal: ctl.signal });
+    if (!current(ctl)) return;
+    op.current = undefined;
+    const ok = r.ok && r.reply.type === "deleted";
+    setScreen((s) => (s.name === "deliver" ? { ...s, busy: false, deleted: s.deleted || ok } : s));
+    if (ok) return;
+    if (!r.ok) return fail(r.error.message, undefined);
+    fail(r.reply.type === "error" ? r.reply.message : `Unexpected reply from the host: ${r.reply.type}`, undefined);
   };
 
   const cancel = (): void => {
@@ -243,6 +405,8 @@ export function Panel({ client }: PanelProps): JSX.Element {
   };
 
   const newTransfer = (): void => {
+    op.current?.abort();
+    op.current = undefined;
     setError(undefined);
     setSession(undefined);
     setPasted("");
@@ -280,7 +444,30 @@ export function Panel({ client }: PanelProps): JSX.Element {
         />
       )}
       {screen.name === "working" && <WorkingScreen progress={screen.progress} onCancel={cancel} />}
-      {screen.name === "review" && <ReviewScreen preview={screen.preview} onNew={newTransfer} />}
+      {screen.name === "review" && session && (
+        <ReviewScreen
+          preview={screen.preview}
+          busy={screen.busy}
+          route={route}
+          selection={selection}
+          turns={session.turns}
+          onRevise={(edits) => void revise(screen.preview, edits)}
+          onApprove={() => void approve(screen.preview)}
+          onNew={newTransfer}
+        />
+      )}
+      {screen.name === "deliver" && (
+        <DeliverScreen
+          committed={screen.committed}
+          delivery={screen.delivery}
+          deleted={screen.deleted}
+          busy={screen.busy}
+          onCopy={(text) => void redeliver(screen.committed, () => copyText(text))}
+          onDownload={(f, z) => void redeliver(screen.committed, () => downloadZip(f, z))}
+          onDelete={() => void deletePack(screen.committed)}
+          onNew={newTransfer}
+        />
+      )}
     </main>
   );
 }
@@ -421,12 +608,35 @@ function WorkingScreen(props: { progress: Progress | undefined; onCancel: () => 
   );
 }
 
-function ReviewScreen(props: { preview: Preview; onNew: () => void }): JSX.Element {
-  const { preview } = props;
+function ReviewScreen(props: {
+  preview: Preview;
+  busy: boolean;
+  route: Route;
+  selection: Set<string>;
+  turns: Turn[];
+  onRevise: (edits: Partial<Edits>) => void;
+  onApprove: () => void;
+  onNew: () => void;
+}): JSX.Element {
+  const { preview, busy } = props;
+  const [confirming, setConfirming] = useState<string | undefined>();
+  const segments = useMemo(() => markEnvelope(preview.envelope, preview.flags), [preview]);
+  const cut = new Set(preview.cutList.flatMap((e) => refTurns(e.ref)));
+  const pushed = props.turns.filter((t) => props.selection.has(t.id) && !cut.has(t.id));
+  const placeholders = [
+    ...new Set(
+      preview.flags.flatMap((f) =>
+        f.kind === "redacted" && f.match !== undefined && preview.envelope.includes(f.match) ? [f.match] : [],
+      ),
+    ),
+  ];
+  const routeLabel = ROUTES.find(([v]) => v === props.route)?.[1] ?? props.route;
   return (
     <section>
-      <h1>Review (placeholder)</h1>
-      <p class="note">Full review arrives in T09. Nothing has been copied, saved or sent.</p>
+      <h1>Review</h1>
+      <p class="counts" data-testid="review-stats">
+        {preview.stats.pushedTokens} / {preview.stats.budget} tokens, {preview.stats.cutCount} cut
+      </p>
       {preview.notices.length > 0 && (
         <ul class="notices">
           {preview.notices.map((n, i) => (
@@ -434,12 +644,158 @@ function ReviewScreen(props: { preview: Preview; onNew: () => void }): JSX.Eleme
           ))}
         </ul>
       )}
-      <p class="counts">
-        {preview.stats.pushedTokens} / {preview.stats.budget} tokens, {preview.stats.cutCount} cut
-      </p>
       <pre data-testid="envelope" class="envelope">
-        {preview.envelope}
+        {segments.map((sg, i) =>
+          sg.kind ? (
+            <mark key={i} data-kind={sg.kind} class={`flag-${sg.kind}`}>
+              {sg.text}
+            </mark>
+          ) : (
+            sg.text
+          ),
+        )}
       </pre>
+      {placeholders.length > 0 && (
+        <>
+          <h2>Redactions</h2>
+          <ul class="redactions">
+            {placeholders.map((ph) => (
+              <li key={ph}>
+                <button type="button" disabled={busy} onClick={() => setConfirming(ph)}>
+                  Reveal {ph}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      {confirming && (
+        <div role="alertdialog" aria-label={`Reveal ${confirming}?`} class="confirm">
+          <p>
+            Reveal {confirming}? Its original value replaces the placeholder in the pack: it is sent to the
+            destination and stored with the pack when you approve. Only reveal it if the destination may see it.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              const ph = confirming;
+              setConfirming(undefined);
+              props.onRevise({ unredact: [ph] });
+            }}
+          >
+            Reveal
+          </button>
+          <button type="button" onClick={() => setConfirming(undefined)}>
+            Cancel
+          </button>
+        </div>
+      )}
+      {pushed.length > 0 && (
+        <>
+          <h2>Turns in the pack</h2>
+          <ul class="pushed">
+            {pushed.map((t) => (
+              <li key={t.id}>
+                <span class="turn-id">
+                  {t.id} · {t.role}
+                </span>{" "}
+                <button type="button" disabled={busy} onClick={() => props.onRevise({ moveToManifest: [t.id] })}>
+                  Remove {t.id}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      {preview.cutList.length > 0 && (
+        <>
+          <h2>Not pushed</h2>
+          <ul class="cut">
+            {preview.cutList.map((e: ManifestEntry) => (
+              <li key={e.ref}>
+                {e.ref}: {e.what} ({e.why}){" "}
+                {/^t\d{3}$/.test(e.ref) && (
+                  <button type="button" disabled={busy} onClick={() => props.onRevise({ moveToPush: [e.ref] })}>
+                    Include {e.ref}
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      <p class="destination">Destination: {routeLabel}</p>
+      <p class="note">{DATA_NOTE}</p>
+      <button type="button" class="primary" disabled={busy || confirming !== undefined} onClick={props.onApprove}>
+        Approve and send
+      </button>
+      <button type="button" onClick={props.onNew}>
+        New transfer
+      </button>
+    </section>
+  );
+}
+
+function DeliverScreen(props: {
+  committed: Committed;
+  delivery: Delivery;
+  deleted: boolean;
+  busy: boolean;
+  onCopy: (text: string) => void;
+  onDownload: (fileName: string, zipBase64: string) => void;
+  onDelete: () => void;
+  onNew: () => void;
+}): JSX.Element {
+  const d = props.committed.deliverable;
+  const done = props.delivery.state === "done";
+  const failed = props.delivery.state === "failed" ? props.delivery.message : undefined;
+  return (
+    <section>
+      <h1>Deliver</h1>
+      <p class="counts">Pack {props.committed.packId}</p>
+      {d.kind === "clipboard" && (
+        <>
+          <p>{done ? "Copied to the clipboard." : `Could not copy automatically${failed ? ` (${failed})` : ""}. Click Copy.`}</p>
+          <button type="button" onClick={() => props.onCopy(d.text)}>
+            {done ? "Copy again" : "Copy"}
+          </button>
+          <div class="row">
+            {DESTINATIONS.map(([label, href]) => (
+              <a key={href} href={href} target="_blank" rel="noopener noreferrer">
+                {label}
+              </a>
+            ))}
+          </div>
+        </>
+      )}
+      {d.kind === "bundle" && (
+        <>
+          <p>{done ? `Downloaded ${d.fileName}.` : `The download did not start${failed ? ` (${failed})` : ""}.`}</p>
+          <button type="button" onClick={() => props.onDownload(d.fileName, d.zipBase64)}>
+            Download again
+          </button>
+        </>
+      )}
+      {d.kind === "mcp" && (
+        <>
+          <p>Type this in the destination client:</p>
+          <p>
+            <code>{d.instruction}</code>
+          </p>
+          <button type="button" onClick={() => props.onCopy(d.instruction)}>
+            Copy
+          </button>
+          {done && <p>Copied to the clipboard.</p>}
+          {failed && <p>Could not copy ({failed}).</p>}
+        </>
+      )}
+      {props.deleted ? (
+        <p>Pack deleted.</p>
+      ) : (
+        <button type="button" disabled={props.busy} onClick={props.onDelete}>
+          Delete this pack
+        </button>
+      )}
       <button type="button" onClick={props.onNew}>
         New transfer
       </button>
