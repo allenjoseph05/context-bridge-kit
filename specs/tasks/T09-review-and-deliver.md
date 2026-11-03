@@ -71,9 +71,11 @@ Clipboard writes from the side panel are blocked in your Chrome version; propose
   links; bundle Blob → `chrome.downloads.download`, URL revoked after 60 s; MCP instruction + Copy; Delete this pack; New transfer).
 - A failed revise or approve returns to Select with the error (preview cleared). Revise/approve are ignored while another op
   is in flight (a synthetic click on the disabled Approve still reached the handler in jsdom).
-- Human request: the Review header/stats render once; test `T09 review renders its header once`. The doubled block from the
-  manual run was not reproduced in code (one render, one #app); recheck during G1.
-- Tests edited after the test commit (by Claude, same session, before human review): revise pushed-token equality depended on
-  the random pack id (f4e3ce9); spy typing for lint (28fb376). One `pnpm check` run had 1 test file fail with no failing
-  test (not reproduced in 4 later runs; cause unknown).
+- The "double Review header" reported at the start of T09 was a copy-paste mistake by the human, not a render bug. The test
+  `T09 review renders its header once` is kept as a guard (heading, stats line, host line, envelope each appear once).
+- Tests edited after the test commit: spy typing for lint (28fb376, approved). The exact pushed-token assertion first failed
+  because pack id and fence are random; `createHost` now takes `newPackId` and `fenceRng` (HostOptions), and
+  `harness({ deterministicIds: true })` uses them (dc8e446, replaces the loosened check from f4e3ce9).
+- One `pnpm check` run had a file-level failure (6 tests never reported, likely `revise.test.ts`); not reproduced in 10
+  verbose runs. Follow-up: T09b.
 - Open: G1 manual run (human).
