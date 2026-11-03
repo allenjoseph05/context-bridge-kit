@@ -11,31 +11,51 @@ pnpm build          # writes packages/mcp-server/dist/index.js
 ```
 
 ## 2. Add the server to Claude Desktop
-Open the config file (create it if it does not exist):
+Open the config file with **Settings → Developer → Edit Config** in Claude Desktop. This creates
+the file if needed and opens the folder that this install actually reads. Its usual location:
 
-- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+- Windows (installer): `%APPDATA%\Claude\claude_desktop_config.json`
+- Windows (Microsoft Store): `%LOCALAPPDATA%\Packages\Claude_<id>\LocalCache\Roaming\Claude\claude_desktop_config.json`
+  (the `%APPDATA%` path does not exist there, so use Edit Config)
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
+Quit Claude Desktop before editing (step 3): a running app can overwrite your change.
 Add the entry with the **absolute** path to `dist/index.js` in your checkout:
 
 ```json
 {
   "mcpServers": {
     "context-bridge": {
-      "command": "node",
-      "args": ["C:/Users/you/context-bridge-kit/packages/mcp-server/dist/index.js"]
+      "command": "C:\\Program Files\\nodejs\\node.exe",
+      "args": ["C:\\Users\\you\\context-bridge-kit\\packages\\mcp-server\\dist\\index.js"]
     }
   }
 }
 ```
 
-On macOS the path looks like `/Users/you/context-bridge-kit/packages/mcp-server/dist/index.js`.
+On Windows, give the absolute path to `node.exe` (`where node` prints it): a Store install may not
+see your `PATH`. On macOS `"command": "node"` usually works, and the path looks like
+`/Users/you/context-bridge-kit/packages/mcp-server/dist/index.js`.
 If your vault is not in the default place, add `"env": { "CB_VAULT": "/absolute/path/to/vault" }`
-next to `args`. Keep any other `mcpServers` entries you already have.
+next to `args`.
+
+**The file is often not empty.** Recent versions keep `"preferences"` and other keys in it. Keep
+them all: add `"mcpServers"` as another **top-level** key (not inside `"preferences"`), with a
+comma after the key before it, and keep any `mcpServers` entries you already have. To check the
+JSON on Windows:
+`Get-Content "<path>\claude_desktop_config.json" -Raw | ConvertFrom-Json | Select-Object -ExpandProperty mcpServers`
 
 ## 3. Restart Claude Desktop
-Quit it fully (Windows: right-click the tray icon → Quit; macOS: Claude → Quit Claude, or ⌘Q);
-closing the window is not enough. Then open it again.
+Quit it fully (Windows: click **^** in the taskbar, right-click the Claude icon → Quit; macOS:
+Claude → Quit Claude, or ⌘Q); closing the window is not enough. Then open it again.
+
+On Windows, **Claude Code also runs as `claude.exe`**, so do not run `Stop-Process -Name claude`:
+it would end your Claude Code sessions too. To see what is still running, and to stop only Claude
+Desktop:
+```powershell
+Get-Process claude | Select-Object Id, Path
+Get-Process claude | Where-Object { $_.Path -like "*WindowsApps*" -or $_.Path -like "*AnthropicClaude*" } | Stop-Process -Force
+```
 
 ## 4. Check that the tools appear
 In a new chat, open the tools menu (the sliders / "Search and tools" button below the input box).
@@ -46,7 +66,8 @@ Windows `%APPDATA%\Claude\logs\mcp-server-context-bridge.log`, macOS
 ## 5. Use a pack
 1. In the Context Bridge side panel, approve a pack with the route **MCP**. It shows a sentence
    like `Load context pack cp_1a2b3c4d with the Context Bridge tools.`
-2. Paste that sentence into a new Claude Desktop chat.
+2. Paste that sentence into a new chat in the **Chat** tab. (The Code tab in auto mode runs tool
+   calls without asking, so the consent prompt below does not appear there.)
 3. Claude asks to run `get_pack`. **Approve the tool call**: this prompt is the second consent,
    by design.
 4. Ask about something that is only in the pack's manifest; Claude can call `get_turns`,
