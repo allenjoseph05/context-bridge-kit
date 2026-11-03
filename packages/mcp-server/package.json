@@ -9,5 +9,17 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     }
+  },
+  "dependencies": {
+    "@cb/compiler": "workspace:*",
+    "@cb/index": "workspace:*",
+    "@cb/schema": "workspace:*",
+    "@cb/tokens": "workspace:*",
+    "@cb/vault": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@cb/host": "workspace:*"
   }
 }

@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@cb/compiler": "workspace:*",
+    "@cb/index": "workspace:*",
     "@cb/sanitizer": "workspace:*",
     "@cb/schema": "workspace:*",
     "@cb/tokens": "workspace:*",
