@@ -404,8 +404,14 @@ export function createHost(options: HostOptions): Host {
       throw new HostError("vault_error", "could not write the pack to the vault");
     }
     if (!written.ok) throw new HostError("vault_error", `could not write the pack (${written.error.code})`);
-    // Bytes of deliberately excluded attachments go now, unless another stored pack uses them.
-    for (const sha of droppedShas) vaultCall(() => vault.releaseFile(sha));
+    // Bytes of deliberately excluded attachments go now, unless another open session (in memory)
+    // or another stored pack (releaseFile) still uses them.
+    const inUse = new Set<string>();
+    for (const other of sessions.values()) {
+      if (other === s) continue;
+      for (const a of other.transcript.attachments) if (a.sha256 !== undefined) inUse.add(a.sha256);
+    }
+    for (const sha of droppedShas) if (!inUse.has(sha)) vaultCall(() => vault.releaseFile(sha));
     s.last = undefined; // a preview is approved once
     const route = p.params.route;
     vault.audit({ event: "approved", sessionId: s.id, packId: pack.id, route, sha256: hash });

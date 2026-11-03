@@ -86,7 +86,8 @@ record the version in `decisions.md`.
   Audit `served` counts: `chars`, `images`, `error` (0/1). SDK-rejected input writes no line (known limit).
 - Host `approve` (`session.ts`): `shareableTranscript(transcript, pack)` (exported) drops turns with
   manifest why `excluded_by_user`/`profile` and their attachments; index = `buildIndex(docsFromTranscript(
-  shareable, extracted texts of status "extracted"))`; then `vault.releaseFile(sha)` per dropped sha.
+  shareable, extracted texts of status "extracted"))`; then `vault.releaseFile(sha)` per dropped sha
+  not used by another open session (checked in memory).
 - New: `vault.releaseFile(sha)`, `Attachment.pageOffsets?`, `@cb/compiler` exports `renderTurn`.
 - T15 must set `pageOffsets` after sanitising; T16 must push images via `pack.push.attachments`
   (`as: "image"`): `get_pack` already returns those as image content from `files/<sha>`, and must

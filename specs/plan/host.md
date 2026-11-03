@@ -30,7 +30,8 @@
    attachment whose manifest `why` is `excluded_by_user` or whose turn was dropped. Turns cut for
    `budget` or `condensed` stay. Pull never reveals what the user deliberately left out.
    After the write, the stored bytes of each dropped attachment (`files/<sha>`, `files/<sha>.txt`)
-   are deleted unless another stored pack references the sha (`vault.releaseFile`); the 24 h orphan
+   are deleted unless another open session of the host or another stored pack references the sha
+   (sessions checked in memory, packs by `vault.releaseFile`); the 24 h orphan
    sweep stays as the fallback for abandoned sessions.
 
 **Suggested selection** (deterministic): the last 10 turns plus any earlier turn that contains a code
