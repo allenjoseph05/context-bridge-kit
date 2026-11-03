@@ -57,7 +57,7 @@ Clipboard writes from the side panel are blocked in your Chrome version; propose
 
 ## Done when
 - [x] Tests pass; `pnpm check` green
-- [ ] G1 passed and recorded
+- [x] G1 passed and recorded
 - [x] `finish-task` run
 
 ## Implementation notes
@@ -78,4 +78,4 @@ Clipboard writes from the side panel are blocked in your Chrome version; propose
   `harness({ deterministicIds: true })` uses them (dc8e446, replaces the loosened check from f4e3ce9).
 - One `pnpm check` run had a file-level failure (6 tests never reported, likely `revise.test.ts`); not reproduced in 10
   verbose runs. Follow-up: T09b.
-- Open: G1 manual run (human).
+- G1 passed 2026-11-03 (see tasks.md §Gates).

@@ -17,7 +17,7 @@ Status: `todo` · `in_progress` · `review` (tests or code waiting for the human
 | T06 | Vault, expiry, audit | T01, T03 | M | — | | done |
 | T07 | Bridge host: protocol, sessions, approval, install | T02, T05, T06 | L | required | | done |
 | T08 | Extension shell: manifest, port, Capture and Select | T07 | L | — | | done |
-| T09 | Review and Deliver; clipboard and bundle routes | T08 | M | — | **G1** | review |
+| T09 | Review and Deliver; clipboard and bundle routes | T08 | M | — | **G1** | done |
 | T09b | Investigate a one-off test-suite failure | T09 | S | — | | todo |
 | T10 | BM25 retrieval index (`@cb/index`) | T01 | S | — | | todo |
 | T11 | MCP server, five read-only tools | T07, T10 | M | required | **G2** | todo |
@@ -41,6 +41,8 @@ Status: `todo` · `in_progress` · `review` (tests or code waiting for the human
 | G3 | An image and a PDF from a captured chat reach the destination | manual run on a demo chat |
 | G4 | A condensed, cited pack fits the budget; coverage holds; profiles differ as specified | manual run + tests |
 | G5 | `pnpm eval` writes the results table | command output |
+
+G1 · 2026-11-03 · passed · paste (8 turns) → Review → approve → clipboard (cp_d7c9fa78) and bundle (cp_1369eec5); human observed: Gemini answered goal and next step correctly from both; envelope showed [SECRET_1]/[EMAIL_1]. Checked: pnpm check/build green, host listens on no port, no planted secret in vault, audit has ids/counts/hashes only, zip written 0.5 s after the approved event, manifest permissions = plan.
 
 ## Cut list (in this order, if time runs short)
 1. Ablations in T21 (keep `full`, `continue-6k`, `rescue`, `second-blind`)
