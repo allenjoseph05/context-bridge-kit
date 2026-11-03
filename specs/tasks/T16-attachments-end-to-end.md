@@ -27,6 +27,9 @@ the drop zone tell the user exactly what to add.
 - Routes: bundle includes original files under `files/`; MCP `get_pack` returns pushed images as
   image content; clipboard lists files with "download the bundle to include them".
 
+- Replace the verbatim-mode attachment placeholder reason with the real push behaviour (T11: today
+  every attachment in a pushed turn is listed with `why: "profile"`, "not pushed in verbatim mode").
+
 ## Acceptance criteria → tests
 | # | Criterion | Test |
 | --- | --- | --- |

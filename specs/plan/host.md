@@ -29,6 +29,9 @@
    `excluded_by_user` or `profile` (blind withholding; manifest ranges expanded), minus every
    attachment whose manifest `why` is `excluded_by_user` or whose turn was dropped. Turns cut for
    `budget` or `condensed` stay. Pull never reveals what the user deliberately left out.
+   After the write, the stored bytes of each dropped attachment (`files/<sha>`, `files/<sha>.txt`)
+   are deleted unless another stored pack references the sha (`vault.releaseFile`); the 24 h orphan
+   sweep stays as the fallback for abandoned sessions.
 
 **Suggested selection** (deterministic): the last 10 turns plus any earlier turn that contains a code
 part, a table, an attachment, or a number with a unit. The user can change it.
@@ -53,6 +56,8 @@ part, a table, an attachment, or a number with a unit. The user can change it.
   start and on `list_packs`, expired packs are deleted with their envelope, transcript and index; a
   file in `files/` is deleted when no remaining pack references it. Clock is injectable for tests.
 - `deletePack(packId)` does the same on demand.
+- `releaseFile(sha)` deletes `files/<sha>` and `files/<sha>.txt` unless a stored pack references
+  the sha; each deletion writes a `deleted` audit event with the sha only.
 - **File references:** a pack references `files/<sha>` and `files/<sha>.txt` for every
   `attachment.sha256` in its stored transcript.
 - **Orphan cleanup:** `sweepExpired` also deletes files in `files/` that no pack references and
