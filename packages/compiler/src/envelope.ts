@@ -119,9 +119,12 @@ function renderBody(pack: ContextPack): string[] {
     ["Constraints", itemSection(items, ["constraint"])],
     ["Decisions", itemSection(items, ["decision"], true)],
     ["Open questions", itemSection(items, ["open_question"])],
-    ["Artifacts", artifacts.map(renderArtifact)],
+    // Verbatim: code, tables and math already appear inside their turns (compiler.md §Verbatim
+    // mode); push.artifacts stays in the pack for hashing but is not rendered twice.
+    ["Artifacts", pack.mode === "verbatim" ? [] : artifacts.map(renderArtifact)],
     ["Attachments", attachments.map(renderAttachment)],
-    ["Recent turns", recentTurns.map(renderTurn)],
+    // Turns are chosen newest first but shown in conversation order; ids follow position.
+    ["Recent turns", [...recentTurns].sort((a, b) => a.id.localeCompare(b.id)).map(renderTurn)],
     ["Facts and preferences", itemSection(items, ["fact", "preference"])],
     ["Manifest", manifest.map(renderManifestEntry)],
   ];

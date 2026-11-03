@@ -1,5 +1,6 @@
 // Sessions and message handlers (protocol.md, host.md §Pipeline per session).
 // Sessions live in memory only; redaction values never leave the session's SanitizeContext.
+import { readFileSync } from "node:fs";
 import { buildBundle, compile, newFence } from "@cb/compiler";
 import {
   ExtToHost,
@@ -43,7 +44,10 @@ export type Host = {
   sessionCount(): number;
 };
 
-const HOST_VERSION = "0.0.0";
+/** The host's version, from packages/host/package.json (read once, relative to dist/ or src/). */
+const HOST_VERSION = (
+  JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { version: string }
+).version;
 const RECENT_TURNS = 10;
 const DAY_MS = 24 * 3_600_000;
 const CONDENSED_NOTICE = "condensed mode arrives in T19";

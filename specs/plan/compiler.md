@@ -75,7 +75,12 @@ offers a larger budget or verbatim mode).
 
 ## Verbatim mode
 No items. Push selected turns verbatim, newest first, until the budget is full; the rest go to the
-manifest with `why: "budget"`. Artifacts stay inside their turns.
+manifest with `why: "budget"`. Artifacts stay inside their turns: the envelope has no
+`## Artifacts` section in verbatim mode (code would appear twice); `push.artifacts` is still
+filled, so the hash covers it.
+- Choosing is not display order: turns are *chosen* newest first (that is the order of
+  `push.recentTurns`), but `## Recent turns` *renders* them oldest first, in conversation order
+  (turn ids follow position).
 - Budget: render the envelope, count it, drop the oldest pushed turn, repeat until it fits. Turns
   in `forcedPush` are dropped last (after every unforced turn); a forced turn that still does not
   fit goes to the manifest with `why: "budget"` and the pack gets a notice ("1 turn you included
@@ -107,9 +112,9 @@ other assistant.
 ## Constraints
 ## Decisions            (each line ends with turn refs, e.g. (t012, t015))
 ## Open questions
-## Artifacts            (fenced code blocks with language; tables as Markdown)
+## Artifacts            (fenced code blocks with language; tables as Markdown; not in verbatim mode)
 ## Attachments          (image placeholders "[image a002: name]", excerpts, summary lines)
-## Recent turns         ("[t118 · user]" headers, verbatim)
+## Recent turns         ("[t118 · user]" headers, verbatim, oldest first)
 ## Facts and preferences
 ## Manifest             (what is not included, why, how to get it)
 --- {fence} ---
