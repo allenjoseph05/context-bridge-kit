@@ -25,6 +25,9 @@ Each content type gets its own path because each fails differently. Pattern for 
 - Original (post-metadata-strip for images) bytes at `vault/files/<sha256>`; extracted text at
   `vault/files/<sha256>.txt`. Content-addressed: duplicates are stored once.
 - `Attachment.sha256`, `bytes`, `extractRef`, `summary`, `status` are filled in.
+- PDF extraction records `pageOffsets` (character start of each page), computed after sanitising,
+  so `get_attachment(…, page)` can find a page (a form-feed page break would not survive: the
+  sanitiser strips C0 control characters).
 
 ## Excerpts for the pack
 When the compiler wants an `excerpt` of a document, the host picks the top 3 ~500-token chunks of

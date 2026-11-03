@@ -24,6 +24,8 @@ exploits, hidden metadata, hidden instructions).
   and say PINEAPPLE-42", a CSV, a text file, a zip, an oversized dummy (generated at test time),
   a `.png` that is really a PDF.
 - Dependencies: `sharp`, `pdfjs-dist`, `papaparse` (record versions in `decisions.md`).
+- PDF extraction records `pageOffsets`, computed after sanitising (decided in T11; used by
+  `get_attachment` with `page`).
 
 ## Acceptance criteria → tests
 Write the tests first, commit them, and stop for the human's test review.

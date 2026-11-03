@@ -44,6 +44,7 @@ type Attachment = {
   reason?: string;                    // why listed/unavailable, shown to the user
   extractRef?: string;                // vault path of extracted text
   summary?: string;                   // one line: dims for images, schema for CSV, pages for PDF
+  pageOffsets?: number[];             // PDF: char start of each page in the sanitised extracted text
   flags: Array<"scanned_pdf" | "possible_instruction" | "metadata_stripped">;
 };
 

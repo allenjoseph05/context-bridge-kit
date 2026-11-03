@@ -27,16 +27,20 @@ All annotated `{ readOnlyHint: true, destructiveHint: false, idempotentHint: tru
 | Tool | Input | Output |
 | --- | --- | --- |
 | `list_packs` | — | metadata only: id, title, source, profile, createdAt, expiresAt, stats |
-| `get_pack` | `packId` | the approved envelope as text; plus pushed images as image content |
-| `search_history` | `packId, query, k ≤ 8` | snippets with refs and scores; attachment hits (`a002#c3`) also give `offset` for `get_attachment` |
-| `get_turns` | `packId, turnIds (≤ 10)` | verbatim turns, rendered like the envelope's Recent turns |
-| `get_attachment` | `packId, attachmentId, page?, offset?` | image → image content (base64 + mime); document → text range of ≤ 4,000 tokens from `offset` (chars) or `page`; listed/unavailable → a text explanation (AC-19) |
+| `get_pack` | `packId` | the approved envelope as text, whole and byte-identical (not capped; see Rules); plus pushed images as image content |
+| `search_history` | `packId, query, k ≤ 8, offset?` | snippets with refs and scores; attachment hits (`a002#c3`) also give `offset` for `get_attachment` |
+| `get_turns` | `packId, turnIds (≤ 10), offset?` | verbatim turns, rendered like the envelope's Recent turns |
+| `get_attachment` | `packId, attachmentId, page?, offset?` | image → image content (base64 + mime); document → text range of ≤ 4,000 tokens from `offset` (chars into the extracted text) or `page` (then `offset` counts chars into that page); pages come from `Attachment.pageOffsets` (page N = `pageOffsets[N-1]` up to `pageOffsets[N]` or the end); without `pageOffsets` only page 1 (the whole text) exists; an out-of-range page is a tool error giving the page count; listed/unavailable → a text explanation (AC-19) |
 
 ### Rules
 - Only packs that are committed and unexpired are visible; anything else → tool error
   "pack not found or expired".
-- **Response cap:** text in any response ≤ 4,000 tokens; when cut, end with
-  `… [truncated; call again with offset=N]`.
+- **Response cap:** the cap applies to pull tools (`search_history`, `get_turns`,
+  `get_attachment`): text ≤ 4,000 tokens; when cut, end with
+  `… [truncated; call again with offset=N]`. `offset` is in characters into that tool's full
+  result text (for `get_attachment`, into the extracted text or the page); concatenating the pages
+  reproduces the full result exactly. `get_pack` is bounded by the approved budget instead: it
+  returns the envelope whole, and its token count never exceeds the pack's `stats.budget`.
 - Tool descriptions are the trigger: each says what it returns and when to use it, e.g.
   `get_turns`: "Return earlier turns of an imported conversation word for word. Use when the pack's
   manifest lists turns you need."
