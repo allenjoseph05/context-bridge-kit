@@ -25,6 +25,13 @@ AC-15, AC-17, US-7. Consent must be visible and binding: what the user approves 
   - mcp: shows the instruction sentence and a copy button (MCP itself arrives in T11);
   - "Delete this pack" → `delete_pack`; "New transfer".
 - Host side, if missing: `revise` handling for the four edit kinds (recompile, new previewId/hash).
+- Implement `edits.unredact` (reveal) host-side, per the AC-05 rule in decisions.md: revealed
+  values may appear in the approved and stored envelope and are marked `revealed: true`. Remove
+  the T07 `invalid_message` stub.
+
+## UI rules
+- After any failed compile or revise, clear the displayed preview; never leave an old preview
+  approvable on screen.
 
 ## Acceptance criteria → tests
 | # | Criterion | Test |
