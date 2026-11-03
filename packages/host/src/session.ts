@@ -24,6 +24,7 @@ import type {
 import { sha256Hex } from "@cb/schema/node";
 import { createContext, sanitizeTranscript, unredact } from "@cb/sanitizer";
 import type { SanitizeContext } from "@cb/sanitizer";
+import type { FenceRng } from "@cb/compiler";
 import { destinationProfile } from "@cb/tokens";
 import type { Vault } from "@cb/vault";
 
@@ -34,6 +35,10 @@ export type HostOptions = {
   hostVersion?: string;
   /** Injectable clock for pack dates. */
   now?: () => Date;
+  /** Injectable pack id generator (tests); default `newPackId`. */
+  newPackId?: () => string;
+  /** Injectable fence RNG (tests); default: the compiler's crypto RNG. */
+  fenceRng?: FenceRng;
 };
 
 export type Host = {
@@ -208,6 +213,7 @@ function union(a: string[], add: string[], remove: string[]): string[] {
 export function createHost(options: HostOptions): Host {
   const { vault, send } = options;
   const now = options.now ?? ((): Date => new Date());
+  const mintPackId = options.newPackId ?? newPackId;
   const sessions = new Map<string, Session>();
 
   function getSession(id: string): Session {
@@ -256,7 +262,7 @@ export function createHost(options: HostOptions): Host {
   async function buildPreview(s: Session, params: CompileParams): Promise<Reply<"preview">> {
     const createdAt = now();
     const expiryDays = vault.readConfig().defaults.expiryDays;
-    const id = newPackId();
+    const id = mintPackId();
     const meta = {
       id,
       title: s.transcript.source.title ?? "Untitled chat",
@@ -276,7 +282,7 @@ export function createHost(options: HostOptions): Host {
       excluded: params.excluded,
       forcedPush: params.forcedPush,
       meta,
-      fence: newFence(JSON.stringify({ transcript, meta })),
+      fence: newFence(JSON.stringify({ transcript, meta }), options.fenceRng),
     });
     if (!result.ok) {
       const { needed, budget } = result.error;

@@ -65,11 +65,21 @@ export type Harness = {
   sendRaw(raw: unknown): Promise<HostToExt[]>;
 };
 
-export function harness(): Harness {
+/** Deterministic ids for tests: pack ids cp_00000001, cp_00000002, … and a fixed fence. */
+export type HarnessOptions = { deterministicIds?: boolean };
+
+export function harness(opts: HarnessOptions = {}): Harness {
   const root = tempDir();
   const vault = openVault({ root, now: () => T0 });
   const replies: HostToExt[] = [];
-  const host = createHost({ vault, send: (m) => replies.push(m), now: () => T0 });
+  let packs = 0;
+  const ids = opts.deterministicIds
+    ? {
+        newPackId: (): string => `cp_${(++packs).toString(16).padStart(8, "0")}`,
+        fenceRng: (): Uint8Array => new Uint8Array([0xa1, 0xb2, 0xc3]),
+      }
+    : {};
+  const host = createHost({ vault, send: (m) => replies.push(m), now: () => T0, ...ids });
   const sendRaw = async (raw: unknown): Promise<HostToExt[]> => {
     const from = replies.length;
     await host.handle(raw);

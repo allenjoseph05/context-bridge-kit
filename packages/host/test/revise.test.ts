@@ -27,7 +27,7 @@ function secretPlaceholder(ingested: { redactions: Array<{ placeholder: string; 
 
 describe("T09 revise edits", () => {
   it("T09 revise edits: moveToManifest cuts a turn; moveToPush brings it back", async () => {
-    const h = harness();
+    const h = harness({ deterministicIds: true });
     const { sessionId, preview } = await ingestAndCompile(h, "small-chat");
     expect(preview.envelope).toContain("t008");
 
@@ -40,8 +40,7 @@ describe("T09 revise edits", () => {
     const back = await revise(h, sessionId, cut.previewId, { moveToPush: ["t008"] });
     expect(back.cutList.some((e) => e.ref === "t008")).toBe(false);
     expect(back.envelope).toContain("t008");
-    // Not exactly equal: each compile mints a new random pack id, which tokenises differently.
-    expect(back.stats.pushedTokens).toBeGreaterThan(cut.stats.pushedTokens);
+    expect(back.stats.pushedTokens).toBe(preview.stats.pushedTokens);
   });
 
   it("T09 revise edits: removeItemIds acts like moveToManifest in verbatim mode", async () => {
